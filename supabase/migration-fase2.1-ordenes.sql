@@ -3,18 +3,20 @@
 -- Ejecutar en: Supabase > SQL Editor (después de migration-fase2.sql)
 -- =============================================
 
--- 1. Pasar datos existentes: 'backlog' → 'pendiente'
+-- 1. Primero quitamos el CHECK antiguo (si existe) para poder cambiar datos
+ALTER TABLE pd_ordenes DROP CONSTRAINT IF EXISTS pd_ordenes_estado_check;
+
+-- 2. Ahora sí podemos pasar los datos existentes: 'backlog' → 'pendiente'
 UPDATE pd_ordenes SET estado = 'pendiente' WHERE estado = 'backlog';
 
--- 2. Reemplazar el CHECK con los nuevos valores
-ALTER TABLE pd_ordenes DROP CONSTRAINT IF EXISTS pd_ordenes_estado_check;
-ALTER TABLE pd_ordenes ADD  CONSTRAINT pd_ordenes_estado_check
+-- 3. Agregamos el CHECK nuevo con los valores correctos
+ALTER TABLE pd_ordenes ADD CONSTRAINT pd_ordenes_estado_check
   CHECK (estado IN ('pendiente', 'en_progreso', 'terminado'));
 
--- Ajustar default
+-- 4. Ajustar default
 ALTER TABLE pd_ordenes ALTER COLUMN estado SET DEFAULT 'pendiente';
 
--- 3. Nuevas columnas
+-- 5. Nuevas columnas
 ALTER TABLE pd_ordenes ADD COLUMN IF NOT EXISTS funcionalidad   TEXT;
 ALTER TABLE pd_ordenes ADD COLUMN IF NOT EXISTS sistema         TEXT;
 ALTER TABLE pd_ordenes ADD COLUMN IF NOT EXISTS fecha_objetivo  DATE;
@@ -22,7 +24,7 @@ ALTER TABLE pd_ordenes ADD COLUMN IF NOT EXISTS fecha_objetivo  DATE;
 -- Índice para filtrar por sistema rápido
 CREATE INDEX IF NOT EXISTS idx_pd_ordenes_sistema ON pd_ordenes(sistema);
 
--- 4. Bitácora de observaciones por orden
+-- 6. Bitácora de observaciones por orden
 CREATE TABLE IF NOT EXISTS pd_orden_notas (
   id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   orden_id    UUID REFERENCES pd_ordenes(id) ON DELETE CASCADE NOT NULL,
