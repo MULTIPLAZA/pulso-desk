@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth, puedeBorrarTicket } from '../lib/auth'
-import { ArrowLeft, Send, Tag, Trash2, MessageCircle, User, Clock, Building2, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Send, Tag, Trash2, MessageCircle, User, Clock, Building2, ClipboardList, CheckCircle2, RotateCcw } from 'lucide-react'
 import { linkWhatsApp, formatearTelefonoPY } from '../lib/phone'
 import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -35,6 +35,8 @@ export default function TicketDetalle() {
   const [mensaje, setMensaje]     = useState('')
   const [origen, setOrigen]       = useState('interno')
   const [enviando, setEnviando]   = useState(false)
+  const [error, setError]         = useState('')
+  const [guardando, setGuardando] = useState(false)
 
   useEffect(() => { cargar() }, [id])
 
@@ -64,11 +66,22 @@ export default function TicketDetalle() {
   }
 
   async function cambiar(campo, valor) {
+    setError('')
+    setGuardando(true)
     const patch = { [campo]: valor }
     if (campo === 'estado' && valor === 'cerrado') patch.cerrado_at = new Date().toISOString()
     if (campo === 'estado' && valor !== 'cerrado' && ticket.estado === 'cerrado') patch.cerrado_at = null
-    await supabase.from('pd_tickets').update(patch).eq('id', ticket.id)
+    const { error: err } = await supabase.from('pd_tickets').update(patch).eq('id', ticket.id)
+    setGuardando(false)
+    if (err) { setError(`No se pudo actualizar: ${err.message}`); return }
     cargar()
+  }
+
+  async function cerrarTicket() {
+    await cambiar('estado', 'cerrado')
+  }
+  async function reabrirTicket() {
+    await cambiar('estado', 'abierto')
   }
 
   async function enviarMensaje(e) {
@@ -121,15 +134,39 @@ export default function TicketDetalle() {
       </div>
 
       <div className="p-4 space-y-4">
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-3 text-xs text-red-700">
+            {error}
+          </div>
+        )}
+
+        {ticket.estado === 'cerrado' ? (
+          <button
+            onClick={reabrirTicket}
+            disabled={guardando}
+            className="w-full py-3 rounded-md bg-gray-900 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <RotateCcw size={15} />{guardando ? 'Reabriendo...' : 'Reabrir ticket'}
+          </button>
+        ) : (
+          <button
+            onClick={cerrarTicket}
+            disabled={guardando}
+            className="w-full py-3 rounded-md bg-emerald-600 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <CheckCircle2 size={15} />{guardando ? 'Cerrando...' : 'Cerrar ticket'}
+          </button>
+        )}
+
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Campo label="Estado">
-              <select value={ticket.estado} onChange={e => cambiar('estado', e.target.value)} className={inputCls}>
+              <select value={ticket.estado} onChange={e => cambiar('estado', e.target.value)} className={inputCls} disabled={guardando}>
                 {ESTADO_OPCIONES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Campo>
             <Campo label="Prioridad">
-              <select value={ticket.prioridad} onChange={e => cambiar('prioridad', e.target.value)} className={inputCls}>
+              <select value={ticket.prioridad} onChange={e => cambiar('prioridad', e.target.value)} className={inputCls} disabled={guardando}>
                 {PRIO_OPCIONES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Campo>
