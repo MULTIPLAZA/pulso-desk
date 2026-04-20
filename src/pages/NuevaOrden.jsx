@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Save, Lightbulb, Ticket } from 'lucide-react'
+
+const IMPACTO_A_PRIORIDAD = { alto: 'alta', medio: 'media', bajo: 'baja' }
 
 export default function NuevaOrden() {
   const navigate    = useNavigate()
@@ -14,6 +16,8 @@ export default function NuevaOrden() {
 
   const [usuarios, setUsuarios] = useState([])
   const [sistemas, setSistemas] = useState([])
+  const [origen, setOrigen]     = useState(null) // { tipo, numero, titulo }
+  const [cargandoOrigen, setCargandoOrigen] = useState(!!(ticketId || solicitudId))
   const [form, setForm] = useState({
     titulo:              '',
     funcionalidad:       '',
@@ -32,6 +36,48 @@ export default function NuevaOrden() {
     supabase.from('pd_usuarios_perfil').select('id, nombre, rol').eq('activo', true).order('nombre').then(({ data }) => setUsuarios(data ?? []))
     supabase.from('pd_sistemas').select('id, nombre').eq('activo', true).order('nombre').then(({ data }) => setSistemas(data ?? []))
   }, [])
+
+  // Hereda datos del origen (ticket o solicitud) si viene del query param
+  useEffect(() => {
+    async function heredar() {
+      if (solicitudId) {
+        const { data } = await supabase
+          .from('pd_solicitudes')
+          .select('numero, titulo, descripcion, sistema_id, impacto')
+          .eq('id', solicitudId)
+          .maybeSingle()
+        if (data) {
+          setOrigen({ tipo: 'solicitud', numero: data.numero, titulo: data.titulo })
+          setForm(f => ({
+            ...f,
+            titulo:              data.titulo ?? f.titulo,
+            funcionalidad:       data.titulo ?? f.funcionalidad,
+            descripcion_tecnica: data.descripcion ?? f.descripcion_tecnica,
+            sistema_id:          data.sistema_id ?? f.sistema_id,
+            prioridad:           IMPACTO_A_PRIORIDAD[data.impacto] ?? f.prioridad,
+          }))
+        }
+      } else if (ticketId) {
+        const { data } = await supabase
+          .from('pd_tickets')
+          .select('numero, titulo, descripcion, prioridad')
+          .eq('id', ticketId)
+          .maybeSingle()
+        if (data) {
+          setOrigen({ tipo: 'ticket', numero: data.numero, titulo: data.titulo })
+          setForm(f => ({
+            ...f,
+            titulo:              data.titulo ?? f.titulo,
+            funcionalidad:       data.titulo ?? f.funcionalidad,
+            descripcion_tecnica: data.descripcion ?? f.descripcion_tecnica,
+            prioridad:           data.prioridad ?? f.prioridad,
+          }))
+        }
+      }
+      setCargandoOrigen(false)
+    }
+    heredar()
+  }, [ticketId, solicitudId])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -65,9 +111,20 @@ export default function NuevaOrden() {
       </div>
 
       <form onSubmit={handleSubmit} className="p-4 space-y-4">
-        {(ticketId || solicitudId) && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-md p-3 text-xs text-emerald-800">
-            Se va a vincular con {ticketId && `ticket seleccionado`}{ticketId && solicitudId && ' y '}{solicitudId && `solicitud seleccionada`}.
+        {cargandoOrigen && (
+          <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs text-gray-600">
+            Cargando datos del origen...
+          </div>
+        )}
+
+        {origen && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-md p-3 text-xs text-emerald-800 flex items-start gap-2">
+            {origen.tipo === 'solicitud' ? <Lightbulb size={14} className="mt-0.5 flex-shrink-0" /> : <Ticket size={14} className="mt-0.5 flex-shrink-0" />}
+            <div>
+              <p className="font-semibold">Heredado de {origen.tipo} #{origen.numero}</p>
+              <p>{origen.titulo}</p>
+              <p className="mt-1 text-emerald-700">Podés ajustar los campos antes de crear la orden. Los datos fueron pre-cargados desde la {origen.tipo}.</p>
+            </div>
           </div>
         )}
 
@@ -135,7 +192,7 @@ export default function NuevaOrden() {
 
         {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-md">{error}</p>}
 
-        <button type="submit" disabled={guardando} className="w-full py-3 rounded-md bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+        <button type="submit" disabled={guardando || cargandoOrigen} className="w-full py-3 rounded-md bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
           <Save size={16} />{guardando ? 'Creando...' : 'Crear orden'}
         </button>
       </form>
