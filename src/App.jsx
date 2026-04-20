@@ -3,6 +3,7 @@ import { ThemeProvider } from './lib/theme'
 import { AuthProvider, useAuth } from './lib/auth'
 import Sidebar from './components/Sidebar'
 import BottomNav from './components/BottomNav'
+import FabCaptura from './components/FabCaptura'
 import Login from './pages/Login'
 import SinPerfil from './pages/SinPerfil'
 import Inicio from './pages/Inicio'
@@ -65,6 +66,7 @@ function AppShell() {
           <BottomNav />
         </div>
       </div>
+      <FabCaptura />
     </BrowserRouter>
   )
 }
