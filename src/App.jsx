@@ -22,6 +22,7 @@ import OrdenDetalle from './pages/OrdenDetalle'
 import Dashboard from './pages/Dashboard'
 import Sistemas from './pages/Sistemas'
 import SistemaDetalle from './pages/SistemaDetalle'
+import Usuarios from './pages/Usuarios'
 import Mas from './pages/Mas'
 
 function AppShell() {
@@ -60,6 +61,7 @@ function AppShell() {
             <Route path="/ordenes/:id"         element={<OrdenDetalle />} />
             <Route path="/sistemas"            element={<Sistemas />} />
             <Route path="/sistemas/:id"        element={<SistemaDetalle />} />
+            <Route path="/usuarios"            element={<Usuarios />} />
             <Route path="/mas"                 element={<Mas />} />
             <Route path="*"                    element={<Navigate to="/" />} />
           </Routes>
