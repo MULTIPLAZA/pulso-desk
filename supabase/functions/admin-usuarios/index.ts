@@ -27,26 +27,29 @@ Deno.serve(async (req) => {
   // --- Validar que el caller sea admin
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) return json({ error: 'missing_authorization' }, 401)
+  const jwt = authHeader.replace(/^Bearer\s+/i, '')
 
-  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
+  // Cliente con service role — para leer perfil saltándose RLS
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
   })
-  const { data: { user }, error: errUser } = await userClient.auth.getUser()
-  if (errUser || !user) return json({ error: 'invalid_token' }, 401)
 
-  const { data: perfil } = await userClient
+  const { data: { user }, error: errUser } = await admin.auth.getUser(jwt)
+  if (errUser || !user) {
+    return json({ error: 'invalid_token', detail: errUser?.message ?? 'no user' }, 401)
+  }
+
+  const { data: perfil, error: errPerfil } = await admin
     .from('pd_usuarios_perfil')
     .select('rol, activo')
     .eq('id', user.id)
     .maybeSingle()
-  if (!perfil || !perfil.activo || perfil.rol !== 'admin') {
-    return json({ error: 'forbidden_not_admin' }, 403)
+  if (errPerfil) return json({ error: 'profile_query_failed', detail: errPerfil.message }, 500)
+  if (!perfil)             return json({ error: 'perfil_no_existe',      detail: `Usuario ${user.email} no tiene perfil en pd_usuarios_perfil` }, 403)
+  if (!perfil.activo)      return json({ error: 'perfil_inactivo',        detail: 'Tu perfil fue desactivado' }, 403)
+  if (perfil.rol !== 'admin') {
+    return json({ error: 'forbidden_not_admin', detail: `Tu rol es "${perfil.rol}", solo admin puede gestionar usuarios` }, 403)
   }
-
-  // --- Cliente con service role (puede crear/borrar en auth)
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
 
   try {
     // ==========================================

@@ -15,8 +15,15 @@ async function llamar(method, body) {
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const msg = data?.error ?? `Error ${res.status}`
-    throw new Error(msg === 'forbidden_not_admin' ? 'Necesitás rol admin' : msg)
+    const code = data?.error ?? `error_${res.status}`
+    const detail = data?.detail ? ` — ${data.detail}` : ''
+    const msg = {
+      forbidden_not_admin: 'Necesitás rol admin',
+      invalid_token:       'Sesión expirada, refrescá (F5) y volvé a probar',
+      perfil_no_existe:    'Tu cuenta no tiene perfil en pd_usuarios_perfil',
+      perfil_inactivo:     'Tu perfil está desactivado',
+    }[code] ?? code
+    throw new Error(msg + detail)
   }
   return data
 }
