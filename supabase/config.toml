@@ -1,0 +1,6 @@
+# Config de Supabase CLI
+# Desactiva el JWT verify automático para admin-usuarios.
+# La función valida internamente que el caller sea admin.
+
+[functions.admin-usuarios]
+verify_jwt = false
