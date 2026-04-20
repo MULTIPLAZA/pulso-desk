@@ -152,11 +152,11 @@ export default function OrdenDetalle() {
       <div className="p-4 space-y-4">
         {/* Barra de edad + vencimiento */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-sm px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${colorD}`}>
+          <span className={`text-sm px-3 py-1.5 rounded-md bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${colorD}`}>
             📅 {diasTexto(dias)}
           </span>
           {orden.fecha_objetivo && (
-            <span className={`text-sm px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 border flex items-center gap-1 ${vencida ? 'border-red-200 text-red-700' : 'border-gray-100 text-gray-600'}`}>
+            <span className={`text-sm px-3 py-1.5 rounded-md bg-white dark:bg-gray-800 border flex items-center gap-1 ${vencida ? 'border-red-200 text-red-700' : 'border-gray-100 text-gray-600'}`}>
               <Calendar size={12} />
               {vencida && <AlertTriangle size={12} />}
               Objetivo: {format(new Date(orden.fecha_objetivo), 'dd/MM/yy')}

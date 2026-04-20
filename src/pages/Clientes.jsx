@@ -42,21 +42,24 @@ export default function Clientes() {
 
   return (
     <div className="min-h-screen">
-      <div className="bg-white dark:bg-gray-800 px-4 pt-14 pb-3 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Clientes</h1>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500">{clientes.length} total</span>
-            {puedeEscribirClientes(perfil.rol) && (
-              <button
-                onClick={() => navigate('/clientes/nuevo')}
-                className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-sm font-medium"
-              >
-                <PlusCircle size={15} />Nuevo
-              </button>
-            )}
-          </div>
+      <div className="bg-emerald-600 px-4 pt-12 pb-4 relative overflow-hidden">
+        <div className="absolute -right-4 -top-2 opacity-15 pointer-events-none">
+          <Building2 size={110} color="white" strokeWidth={1.5} />
         </div>
+        <div className="flex items-center justify-between relative">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Clientes</h1>
+            <p className="text-xs text-white/80">{clientes.length} empresas · base del ecosistema</p>
+          </div>
+          {puedeEscribirClientes(perfil.rol) && (
+            <button onClick={() => navigate('/clientes/nuevo')} className="flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-md border border-white/30">
+              <PlusCircle size={15} />Nuevo
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 px-4 pt-3 pb-3 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10">
         <div className="relative">
           <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input

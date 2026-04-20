@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { AlertCircle, Clock, CheckCircle2, Ticket as TicketIcon, TrendingUp, Building2, Tag, ClipboardList } from 'lucide-react'
+import { AlertCircle, Clock, CheckCircle2, Ticket as TicketIcon, TrendingUp, Building2, Tag, ClipboardList, BarChart3 } from 'lucide-react'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -101,9 +101,14 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen">
-      <div className="bg-white dark:bg-gray-800 px-4 pt-14 pb-3 border-b border-gray-100 dark:border-gray-700">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-        <p className="text-xs text-gray-500">Vista global de soporte y desarrollo</p>
+      <div className="bg-cyan-600 px-4 pt-12 pb-5 relative overflow-hidden">
+        <div className="absolute -right-4 -top-2 opacity-15 pointer-events-none">
+          <BarChart3 size={110} color="white" strokeWidth={1.5} />
+        </div>
+        <div className="relative">
+          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+          <p className="text-xs text-white/80">Vista global de soporte y desarrollo</p>
+        </div>
       </div>
 
       <div className="p-4 space-y-4">
@@ -152,7 +157,7 @@ export default function Dashboard() {
               {data.topClientes.map(c => (
                 <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)} className="w-full flex items-center justify-between text-left border border-gray-100 rounded-md p-2.5 active:bg-gray-50">
                   <span className="text-sm text-gray-900 dark:text-white truncate">{c.nombre}</span>
-                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{c.total} tickets</span>
+                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-medium">{c.total} tickets</span>
                 </button>
               ))}
             </div>
@@ -167,7 +172,7 @@ export default function Dashboard() {
           ) : (
             <div className="flex flex-wrap gap-2">
               {data.topEtiquetas.map(e => (
-                <span key={e.id} className="px-3 py-1.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: e.color }}>
+                <span key={e.id} className="px-3 py-1.5 rounded-md text-xs font-medium text-white" style={{ backgroundColor: e.color }}>
                   {e.nombre} · {e.total}
                 </span>
               ))}
@@ -185,7 +190,7 @@ export default function Dashboard() {
               {data.topSolic.map(s => (
                 <button key={s.id} onClick={() => navigate(`/solicitudes/${s.id}`)} className="w-full flex items-center justify-between text-left border border-gray-100 rounded-md p-2.5 active:bg-gray-50">
                   <span className="text-sm text-gray-900 dark:text-white truncate">{s.titulo}</span>
-                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0 ml-2">× {s.frecuencia}</span>
+                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-medium flex-shrink-0 ml-2">× {s.frecuencia}</span>
                 </button>
               ))}
             </div>

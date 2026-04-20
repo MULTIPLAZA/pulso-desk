@@ -126,12 +126,12 @@ export default function ClienteDetalle() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-sm text-gray-900 dark:text-white">{c.nombre}</p>
-                    {c.principal && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Principal</span>}
+                    {c.principal && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md">Principal</span>}
                   </div>
                   {c.rol && <p className="text-xs text-gray-500">{c.rol}</p>}
                   <p className="text-xs text-gray-500">{formatearTelefonoPY(c.telefono)}</p>
                 </div>
-                <a href={linkWhatsApp(c.telefono)} target="_blank" rel="noreferrer" className="p-2 bg-green-500 rounded-full text-white"><MessageCircle size={15} /></a>
+                <a href={linkWhatsApp(c.telefono)} target="_blank" rel="noreferrer" className="p-2 bg-green-500 rounded-md text-white"><MessageCircle size={15} /></a>
                 {puedeEditar && (
                   <button onClick={() => borrarContacto(c.id)} className="p-2 text-red-500"><Trash2 size={14} /></button>
                 )}
@@ -176,7 +176,7 @@ export default function ClienteDetalle() {
                 <div key={t.id} onClick={() => navigate(`/tickets/${t.id}`)} className="border border-gray-100 dark:border-gray-700 rounded-md p-3 cursor-pointer active:bg-gray-50">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
                     <span className="text-xs text-gray-400">#{t.numero}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${e.bg} ${e.text}`}>{e.label}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-md ${e.bg} ${e.text}`}>{e.label}</span>
                     <span className="text-xs text-gray-500">{format(new Date(t.created_at), 'dd/MM/yy')}</span>
                   </div>
                   <p className="text-sm text-gray-900 dark:text-white truncate">{t.titulo}</p>

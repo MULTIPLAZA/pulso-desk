@@ -195,7 +195,7 @@ export default function TicketDetalle() {
                 <p className="text-sm text-gray-900 dark:text-white">{contacto.nombre}</p>
                 <p className="text-xs text-gray-500">{formatearTelefonoPY(contacto.telefono)}</p>
               </div>
-              <a href={linkWhatsApp(contacto.telefono)} target="_blank" rel="noreferrer" className="p-2 bg-green-500 rounded-full text-white"><MessageCircle size={14} /></a>
+              <a href={linkWhatsApp(contacto.telefono)} target="_blank" rel="noreferrer" className="p-2 bg-green-500 rounded-md text-white"><MessageCircle size={14} /></a>
             </div>
           )}
         </div>
@@ -211,7 +211,7 @@ export default function TicketDetalle() {
                 <button
                   key={e.id}
                   onClick={() => toggleEtiqueta(e)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-opacity ${activa ? 'text-white' : 'bg-gray-100 text-gray-600 opacity-60'}`}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-opacity ${activa ? 'text-white' : 'bg-gray-100 text-gray-600 opacity-60'}`}
                   style={activa ? { backgroundColor: e.color } : {}}
                 >
                   {e.nombre}
@@ -243,7 +243,7 @@ export default function TicketDetalle() {
               {['interno', 'cliente', 'nota'].map(op => (
                 <button
                   key={op} type="button" onClick={() => setOrigen(op)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${origen === op ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+                  className={`px-3 py-1 rounded-md text-xs font-medium ${origen === op ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600'}`}
                 >
                   {etiquetaOrigen(op)}
                 </button>

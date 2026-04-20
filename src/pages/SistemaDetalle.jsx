@@ -83,7 +83,7 @@ export default function SistemaDetalle() {
               <button
                 key={f.value}
                 onClick={() => setFiltro(f.value)}
-                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
+                className={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap flex-shrink-0 ${
                   filtro === f.value ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600'
                 }`}
               >
@@ -108,8 +108,8 @@ export default function SistemaDetalle() {
                   <div key={o.id} onClick={() => navigate(`/ordenes/${o.id}`)} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700 cursor-pointer active:bg-gray-50">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="text-xs text-gray-400">#{o.numero}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${e.bg} ${e.text}`}>{e.label}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${p.bg} ${p.text}`}>{p.emoji} {o.prioridad}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-md ${e.bg} ${e.text}`}>{e.label}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-md ${p.bg} ${p.text}`}>{p.emoji} {o.prioridad}</span>
                       <span className={`text-xs ml-auto ${colorD}`}>{diasTexto(d)}</span>
                     </div>
                     <p className="text-sm text-gray-900 dark:text-white font-medium">{o.titulo}</p>

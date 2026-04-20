@@ -68,18 +68,29 @@ export default function Ordenes() {
 
   return (
     <div className="min-h-screen">
-      <div className="bg-white dark:bg-gray-800 px-4 pt-14 pb-3 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Órdenes de trabajo</h1>
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/sistemas')} className="text-gray-500 text-sm flex items-center gap-1"><Server size={14} />Sistemas</button>
+      <div className="bg-indigo-600 px-4 pt-12 pb-4 relative overflow-hidden">
+        <div className="absolute -right-4 -top-2 opacity-15 pointer-events-none">
+          <ClipboardList size={110} color="white" strokeWidth={1.5} />
+        </div>
+        <div className="flex items-center justify-between relative">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Órdenes de trabajo</h1>
+            <p className="text-xs text-white/80">{lista.length} total · pipeline de desarrollo</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate('/sistemas')} className="flex items-center gap-1 bg-white/15 hover:bg-white/25 text-white text-xs font-medium px-2.5 py-1.5 rounded-md border border-white/20">
+              <Server size={13} />Sistemas
+            </button>
             {puedeCrear && (
-              <button onClick={() => navigate('/ordenes/nueva')} className="flex items-center gap-1 text-emerald-600 text-sm font-medium">
+              <button onClick={() => navigate('/ordenes/nueva')} className="flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-md border border-white/30">
                 <PlusCircle size={15} />Nueva
               </button>
             )}
           </div>
         </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 px-4 pt-3 pb-3 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10">
 
         <div className="relative mb-3">
           <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -97,7 +108,7 @@ export default function Ordenes() {
             <button
               key={f.value}
               onClick={() => setEstado(f.value)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0 ${
+              className={`px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap flex-shrink-0 ${
                 estado === f.value ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
               }`}
             >
@@ -109,7 +120,7 @@ export default function Ordenes() {
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           <button
             onClick={() => setSistemaId('')}
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
+            className={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap flex-shrink-0 ${
               !sistemaId ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
             }`}
           >
@@ -119,10 +130,10 @@ export default function Ordenes() {
             <button
               key={s.id}
               onClick={() => setSistemaId(s.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 flex items-center gap-1.5`}
+              className={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap flex-shrink-0 flex items-center gap-1.5`}
               style={sistemaId === s.id ? { backgroundColor: s.color, color: 'white' } : { backgroundColor: '#f3f4f6', color: '#4b5563' }}
             >
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+              <span className="w-2 h-2 rounded-md" style={{ backgroundColor: s.color }} />
               {s.nombre}
             </button>
           ))}
@@ -153,15 +164,15 @@ export default function Ordenes() {
             >
               <div className="flex items-center gap-2 flex-wrap mb-1.5">
                 <span className="text-xs text-gray-400">#{o.numero}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${e.bg} ${e.text}`}>{e.label}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.bg} ${p.text}`}>{p.emoji} {o.prioridad}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${e.bg} ${e.text}`}>{e.label}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${p.bg} ${p.text}`}>{p.emoji} {o.prioridad}</span>
                 {sis && (
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium text-white flex items-center gap-1" style={{ backgroundColor: sis.color }}>
+                  <span className="text-xs px-2 py-0.5 rounded-md font-medium text-white flex items-center gap-1" style={{ backgroundColor: sis.color }}>
                     {sis.nombre}
                   </span>
                 )}
                 {vencida && (
-                  <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium flex items-center gap-1"><AlertTriangle size={10} />Vencida</span>
+                  <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-md font-medium flex items-center gap-1"><AlertTriangle size={10} />Vencida</span>
                 )}
               </div>
 

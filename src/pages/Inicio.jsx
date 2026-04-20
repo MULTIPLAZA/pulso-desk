@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Ticket, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
+import { Ticket, AlertCircle, CheckCircle2, Clock, Activity } from 'lucide-react'
 
 const PRIO_CONFIG = {
   alta:  { bg: 'bg-red-100',    text: 'text-red-700',    label: '🔴 Alta'  },
@@ -56,17 +56,22 @@ export default function Inicio() {
 
   return (
     <div className="min-h-screen">
-      <div className="bg-white dark:bg-gray-800 px-4 pt-14 pb-4 border-b border-gray-100 dark:border-gray-700">
-        <p className="text-xs text-gray-400">Hola, {perfil.nombre}</p>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Pulso Desk</h1>
-        <p className="text-xs text-gray-500 capitalize mt-0.5">{perfil.rol}</p>
+      <div className="bg-sky-600 px-4 pt-12 pb-5 relative overflow-hidden">
+        <div className="absolute -right-4 -top-2 opacity-15 pointer-events-none">
+          <Activity size={110} color="white" strokeWidth={1.5} />
+        </div>
+        <div className="relative">
+          <p className="text-xs text-white/80">Hola, {perfil.nombre}</p>
+          <h1 className="text-2xl font-bold text-white">Pulso Desk</h1>
+          <p className="text-xs text-white/80 capitalize mt-0.5">{perfil.rol}</p>
+        </div>
       </div>
 
       <div className="px-4 py-4 grid grid-cols-2 gap-3">
-        <Stat icon={AlertCircle}  color="text-red-500"    label="Abiertos"          value={stats.abiertos} />
-        <Stat icon={Clock}        color="text-yellow-500" label="En proceso"        value={stats.en_proceso} />
-        <Stat icon={Ticket}       color="text-blue-500"   label="Esperando cliente" value={stats.esperando} />
-        <Stat icon={CheckCircle2} color="text-emerald-500" label="Cerrados hoy"     value={stats.cerrados_hoy} />
+        <StatColor icon={AlertCircle}   accent="bg-red-500"     bgLight="bg-red-50"     textLabel="text-red-700"     label="Abiertos"          value={stats.abiertos} />
+        <StatColor icon={Clock}         accent="bg-amber-500"   bgLight="bg-amber-50"   textLabel="text-amber-700"   label="En proceso"        value={stats.en_proceso} />
+        <StatColor icon={Ticket}        accent="bg-blue-500"    bgLight="bg-blue-50"    textLabel="text-blue-700"    label="Esperando cliente" value={stats.esperando} />
+        <StatColor icon={CheckCircle2} accent="bg-emerald-500" bgLight="bg-emerald-50" textLabel="text-emerald-700" label="Cerrados hoy"      value={stats.cerrados_hoy} />
       </div>
 
       <div className="px-4 pb-4">
@@ -84,11 +89,11 @@ export default function Inicio() {
               <div
                 key={t.id}
                 onClick={() => navigate(`/tickets/${t.id}`)}
-                className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700 cursor-pointer active:bg-gray-50"
+                className="bg-white dark:bg-gray-800 rounded-lg p-3 border-l-4 border-red-500 border-t border-r border-b border-gray-100 dark:border-gray-700 cursor-pointer active:bg-gray-50"
               >
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="text-xs text-gray-400">#{t.numero}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${prio.bg} ${prio.text}`}>{prio.label}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${prio.bg} ${prio.text}`}>{prio.label}</span>
                   <span className="text-xs text-gray-500">{ESTADO_LABEL[t.estado]}</span>
                 </div>
                 <p className="font-semibold text-gray-900 dark:text-white text-sm">{t.titulo}</p>
@@ -104,14 +109,16 @@ export default function Inicio() {
   )
 }
 
-function Stat({ icon: Icon, color, label, value }) {
+function StatColor({ icon: Icon, accent, bgLight, textLabel, label, value }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+    <div className={`${bgLight} rounded-lg p-3 border-l-4 ${accent.replace('bg-', 'border-')} border-t border-r border-b border-gray-100 dark:border-gray-700`}>
       <div className="flex items-center gap-2 mb-1">
-        <Icon size={16} className={color} />
-        <p className="text-xs text-gray-500">{label}</p>
+        <div className={`${accent} w-6 h-6 rounded-md flex items-center justify-center`}>
+          <Icon size={14} color="white" />
+        </div>
+        <p className={`text-xs font-semibold ${textLabel}`}>{label}</p>
       </div>
-      <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+      <p className="text-2xl font-bold text-gray-900">{value}</p>
     </div>
   )
 }

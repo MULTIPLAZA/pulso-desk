@@ -73,16 +73,24 @@ export default function Sistemas() {
 
   return (
     <div className="min-h-screen">
-      <div className="bg-white dark:bg-gray-800 px-4 pt-14 pb-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft size={20} /></button>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Sistemas</h1>
+      <div className="bg-violet-600 px-4 pt-12 pb-4 relative overflow-hidden">
+        <div className="absolute -right-4 -top-2 opacity-15 pointer-events-none">
+          <Server size={110} color="white" strokeWidth={1.5} />
         </div>
-        {esAdmin && !editando && (
-          <button onClick={abrirNuevo} className="flex items-center gap-1 text-emerald-600 text-sm font-medium">
-            <Plus size={15} />Nuevo
-          </button>
-        )}
+        <div className="flex items-center justify-between relative gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <button onClick={() => navigate(-1)} className="p-1 text-white/90"><ArrowLeft size={20} /></button>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-white">Sistemas</h1>
+              <p className="text-xs text-white/80">{lista.length} productos que mantenés</p>
+            </div>
+          </div>
+          {esAdmin && !editando && (
+            <button onClick={abrirNuevo} className="flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-md border border-white/30">
+              <Plus size={15} />Nuevo
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="p-4 space-y-3">
@@ -145,7 +153,7 @@ export default function Sistemas() {
                 <button onClick={() => navigate(`/sistemas/${s.id}`)} className="flex-1 text-left min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-sm text-gray-900 dark:text-white">{s.nombre}</p>
-                    {!s.activo && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Inactivo</span>}
+                    {!s.activo && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">Inactivo</span>}
                   </div>
                   {s.descripcion && <p className="text-xs text-gray-500 truncate">{s.descripcion}</p>}
                   <p className="text-xs text-gray-500 mt-0.5">

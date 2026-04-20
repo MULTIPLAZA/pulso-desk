@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth, puedeCrearTickets } from '../lib/auth'
-import { Search, PlusCircle, Ticket as TicketIcon } from 'lucide-react'
+import { Search, PlusCircle, Ticket as TicketIcon, Ticket } from 'lucide-react'
 import { format } from 'date-fns'
 
 const ESTADO_FILTROS = [
@@ -63,18 +63,24 @@ export default function Tickets() {
 
   return (
     <div className="min-h-screen">
-      <div className="bg-white dark:bg-gray-800 px-4 pt-14 pb-3 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Tickets</h1>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500">{tickets.length} total</span>
-            {puedeCrearTickets(perfil.rol) && (
-              <button onClick={() => navigate('/tickets/nuevo')} className="flex items-center gap-1 text-emerald-600 text-sm font-medium">
-                <PlusCircle size={15} />Nuevo
-              </button>
-            )}
-          </div>
+      <div className="bg-red-600 px-4 pt-12 pb-4 relative overflow-hidden">
+        <div className="absolute -right-4 -top-2 opacity-15 pointer-events-none">
+          <Ticket size={110} color="white" strokeWidth={1.5} />
         </div>
+        <div className="flex items-center justify-between relative">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Tickets</h1>
+            <p className="text-xs text-white/80">{tickets.length} total · soporte al cliente</p>
+          </div>
+          {puedeCrearTickets(perfil.rol) && (
+            <button onClick={() => navigate('/tickets/nuevo')} className="flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-md border border-white/30">
+              <PlusCircle size={15} />Nuevo
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 px-4 pt-3 pb-3 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10">
         <div className="relative mb-3">
           <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
@@ -90,7 +96,7 @@ export default function Tickets() {
             <button
               key={f.value}
               onClick={() => setFiltro(f.value)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+              className={`px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
                 filtro === f.value
                   ? 'bg-emerald-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
@@ -121,8 +127,8 @@ export default function Tickets() {
             >
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <span className="text-xs text-gray-400">#{t.numero}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${e.bg} ${e.text}`}>{e.label}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.bg} ${p.text}`}>{p.emoji} {t.prioridad}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${e.bg} ${e.text}`}>{e.label}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${p.bg} ${p.text}`}>{p.emoji} {t.prioridad}</span>
                 <span className="text-xs text-gray-500 ml-auto">{format(new Date(t.created_at), 'dd/MM/yy')}</span>
               </div>
               <p className="font-semibold text-gray-900 dark:text-white text-sm">{t.titulo}</p>
