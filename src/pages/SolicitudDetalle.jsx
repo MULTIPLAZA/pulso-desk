@@ -24,18 +24,21 @@ export default function SolicitudDetalle() {
   const { perfil } = useAuth()
   const [sol, setSol]         = useState(null)
   const [ordenes, setOrdenes] = useState([])
+  const [sistemas, setSistemas] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { cargar() }, [id])
 
   async function cargar() {
     setLoading(true)
-    const [{ data: s }, { data: ords }] = await Promise.all([
-      supabase.from('pd_solicitudes').select('*, pd_clientes(id, razon_social)').eq('id', id).single(),
+    const [{ data: s }, { data: ords }, { data: sis }] = await Promise.all([
+      supabase.from('pd_solicitudes').select('*, pd_clientes(id, razon_social), pd_sistemas(id, nombre, color)').eq('id', id).single(),
       supabase.from('pd_orden_solicitud').select('pd_ordenes(id, numero, titulo, estado)').eq('solicitud_id', id),
+      supabase.from('pd_sistemas').select('id, nombre').eq('activo', true).order('nombre'),
     ])
     setSol(s)
     setOrdenes((ords ?? []).map(x => x.pd_ordenes).filter(Boolean))
+    setSistemas(sis ?? [])
     setLoading(false)
   }
 
@@ -82,6 +85,12 @@ export default function SolicitudDetalle() {
               </select>
             </Campo>
           </div>
+          <Campo label="Sistema">
+            <select value={sol.sistema_id ?? ''} onChange={e => cambiar('sistema_id', e.target.value || null)} className={inputCls}>
+              <option value="">— Sin definir —</option>
+              {sistemas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            </select>
+          </Campo>
           <Campo label="Frecuencia (clientes que lo pidieron)">
             <input type="number" min={1} value={sol.frecuencia} onChange={e => cambiar('frecuencia', Number(e.target.value) || 1)} className={inputCls} />
           </Campo>

@@ -8,10 +8,12 @@ export default function NuevaSolicitud() {
   const navigate   = useNavigate()
   const { perfil } = useAuth()
   const [clientes, setClientes] = useState([])
+  const [sistemas, setSistemas] = useState([])
   const [form, setForm] = useState({
     titulo:      '',
     descripcion: '',
     cliente_id:  '',
+    sistema_id:  '',
     impacto:     'medio',
     frecuencia:  1,
   })
@@ -20,6 +22,7 @@ export default function NuevaSolicitud() {
 
   useEffect(() => {
     supabase.from('pd_clientes').select('id, razon_social').order('razon_social').then(({ data }) => setClientes(data ?? []))
+    supabase.from('pd_sistemas').select('id, nombre').eq('activo', true).order('nombre').then(({ data }) => setSistemas(data ?? []))
   }, [])
 
   async function handleSubmit(e) {
@@ -30,6 +33,7 @@ export default function NuevaSolicitud() {
     const payload = {
       ...form,
       cliente_id: form.cliente_id || null,
+      sistema_id: form.sistema_id || null,
       frecuencia: Number(form.frecuencia) || 1,
       creado_por: perfil.id,
     }
@@ -52,6 +56,12 @@ export default function NuevaSolicitud() {
           </Campo>
           <Campo label="Descripción">
             <textarea rows={3} value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} className={inputCls} placeholder="Qué pide, para qué lo quiere..." />
+          </Campo>
+          <Campo label="Sistema que cambiaría">
+            <select value={form.sistema_id} onChange={e => setForm(f => ({ ...f, sistema_id: e.target.value }))} className={inputCls}>
+              <option value="">— Sin definir —</option>
+              {sistemas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            </select>
           </Campo>
           <Campo label="Cliente que lo pidió">
             <select value={form.cliente_id} onChange={e => setForm(f => ({ ...f, cliente_id: e.target.value }))} className={inputCls}>

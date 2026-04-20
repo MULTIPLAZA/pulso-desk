@@ -9,11 +9,24 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session) cargarPerfil(session.user.id)
-      else setLoading(false)
+    // Al montar, intentar refrescar la sesión por si el token expiró mientras la pestaña estaba cerrada
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        const expirado = session.expires_at && session.expires_at * 1000 < Date.now() + 60_000
+        if (expirado) {
+          const { data } = await supabase.auth.refreshSession()
+          setSession(data.session)
+          if (data.session) cargarPerfil(data.session.user.id)
+          else { setPerfil(null); setLoading(false) }
+          return
+        }
+        setSession(session)
+        cargarPerfil(session.user.id)
+      } else {
+        setLoading(false)
+      }
     })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setSession(session)
       if (session) cargarPerfil(session.user.id)

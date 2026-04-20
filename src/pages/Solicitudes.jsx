@@ -29,19 +29,25 @@ const FILTROS = [
 export default function Solicitudes() {
   const navigate = useNavigate()
   const [lista, setLista]       = useState([])
+  const [sistemas, setSistemas] = useState([])
   const [filtro, setFiltro]     = useState('activas')
+  const [sistemaId, setSistemaId] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => { cargar() }, [])
 
   async function cargar() {
-    const { data } = await supabase
-      .from('pd_solicitudes')
-      .select('id, numero, titulo, estado, impacto, frecuencia, created_at, pd_clientes(razon_social)')
-      .order('frecuencia', { ascending: false })
-      .order('created_at', { ascending: false })
+    const [{ data }, { data: sis }] = await Promise.all([
+      supabase
+        .from('pd_solicitudes')
+        .select('id, numero, titulo, estado, impacto, frecuencia, created_at, sistema_id, pd_clientes(razon_social), pd_sistemas(id, nombre, color)')
+        .order('frecuencia', { ascending: false })
+        .order('created_at', { ascending: false }),
+      supabase.from('pd_sistemas').select('id, nombre, color').eq('activo', true).order('nombre'),
+    ])
     setLista(data ?? [])
+    setSistemas(sis ?? [])
     setLoading(false)
   }
 
@@ -52,6 +58,7 @@ export default function Solicitudes() {
       if (filtro === 'activas') return s.estado === 'pendiente' || s.estado === 'en_analisis'
       return s.estado === filtro
     })
+    .filter(s => !sistemaId || s.sistema_id === sistemaId)
     .filter(s => !busqueda || s.titulo.toLowerCase().includes(q) || s.pd_clientes?.razon_social?.toLowerCase().includes(q))
 
   return (
@@ -76,7 +83,7 @@ export default function Solicitudes() {
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide mb-2">
           {FILTROS.map(f => (
             <button
               key={f.value}
@@ -88,6 +95,25 @@ export default function Solicitudes() {
               }`}
             >
               {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <button
+            onClick={() => setSistemaId('')}
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${!sistemaId ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'}`}
+          >
+            Todos los sistemas
+          </button>
+          {sistemas.map(s => (
+            <button
+              key={s.id}
+              onClick={() => setSistemaId(s.id)}
+              className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 flex items-center gap-1.5"
+              style={sistemaId === s.id ? { backgroundColor: s.color, color: 'white' } : { backgroundColor: '#f3f4f6', color: '#4b5563' }}
+            >
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+              {s.nombre}
             </button>
           ))}
         </div>
@@ -114,6 +140,9 @@ export default function Solicitudes() {
                 <span className="text-xs text-gray-400">#{s.numero}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${e.bg} ${e.text}`}>{e.label}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${i.bg} ${i.text}`}>{i.emoji} {s.impacto}</span>
+                {s.pd_sistemas && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium text-white" style={{ backgroundColor: s.pd_sistemas.color }}>{s.pd_sistemas.nombre}</span>
+                )}
                 {s.frecuencia > 1 && (
                   <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">× {s.frecuencia}</span>
                 )}
