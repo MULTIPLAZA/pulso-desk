@@ -1,0 +1,12 @@
+{
+  "name": "Pulso Desk",
+  "short_name": "Pulso",
+  "description": "Gestión de soporte y órdenes de trabajo de desarrollo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#059669",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
