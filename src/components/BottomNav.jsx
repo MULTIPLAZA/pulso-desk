@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Ticket, PlusCircle, Building2, MoreHorizontal } from 'lucide-react'
+import { LayoutDashboard, Ticket, ClipboardList, Building2, MoreHorizontal } from 'lucide-react'
 
 const navItems = [
-  { to: '/',              icon: LayoutDashboard, label: 'Inicio'   },
-  { to: '/tickets',       icon: Ticket,          label: 'Tickets'  },
-  { to: '/tickets/nuevo', icon: PlusCircle,      label: 'Nuevo'    },
-  { to: '/clientes',      icon: Building2,       label: 'Clientes' },
-  { to: '/mas',           icon: MoreHorizontal,  label: 'Más'      },
+  { to: '/',         icon: LayoutDashboard, label: 'Inicio'   },
+  { to: '/tickets',  icon: Ticket,          label: 'Tickets'  },
+  { to: '/ordenes',  icon: ClipboardList,   label: 'Órdenes'  },
+  { to: '/clientes', icon: Building2,       label: 'Clientes' },
+  { to: '/mas',      icon: MoreHorizontal,  label: 'Más'      },
 ]
 
 export default function BottomNav() {

@@ -1,6 +1,7 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useTheme } from '../lib/theme'
-import { LogOut, Moon, Sun } from 'lucide-react'
+import { LogOut, Moon, Sun, BarChart3, Lightbulb, PlusCircle, ChevronRight } from 'lucide-react'
 
 const ROL_LABEL = {
   admin:         'Administrador',
@@ -24,6 +25,13 @@ export default function Mas() {
           <p className="text-sm text-gray-500">{ROL_LABEL[perfil.rol]}</p>
         </div>
 
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <LinkRow to="/dashboard"       icon={BarChart3}  label="Dashboard" />
+          <LinkRow to="/solicitudes"     icon={Lightbulb}  label="Solicitudes" />
+          <LinkRow to="/tickets/nuevo"   icon={PlusCircle} label="Nuevo ticket" />
+          <LinkRow to="/solicitudes/nueva" icon={PlusCircle} label="Nueva solicitud" last />
+        </div>
+
         <button
           onClick={toggle}
           className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4 text-left"
@@ -43,5 +51,15 @@ export default function Mas() {
         </button>
       </div>
     </div>
+  )
+}
+
+function LinkRow({ to, icon: Icon, label, last }) {
+  return (
+    <Link to={to} className={`flex items-center gap-3 p-4 ${!last ? 'border-b border-gray-100 dark:border-gray-700' : ''} active:bg-gray-50`}>
+      <Icon size={18} className="text-gray-500" />
+      <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">{label}</span>
+      <ChevronRight size={16} className="text-gray-300" />
+    </Link>
   )
 }

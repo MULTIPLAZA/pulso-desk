@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth, puedeEscribirClientes } from '../lib/auth'
 import { Search, PlusCircle, Building2, ChevronRight } from 'lucide-react'
-import { normalizarTelefono } from '../lib/phone'
+import { normalizarTelefono, telefonoCoincide } from '../lib/phone'
 
 const ESTADO_LABEL = {
   activo:    '✅ Activo',
@@ -35,8 +35,8 @@ export default function Clientes() {
     if (!busqueda) return true
     if (c.razon_social.toLowerCase().includes(q)) return true
     if (c.rubro?.toLowerCase().includes(q))      return true
-    if (qNum && c.pd_contactos?.some(ct => normalizarTelefono(ct.telefono).includes(qNum))) return true
     if (c.pd_contactos?.some(ct => ct.nombre.toLowerCase().includes(q))) return true
+    if (qNum && c.pd_contactos?.some(ct => telefonoCoincide(ct.telefono, busqueda))) return true
     return false
   })
 

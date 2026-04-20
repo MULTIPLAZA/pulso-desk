@@ -1,0 +1,218 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+import { AlertCircle, Clock, CheckCircle2, Ticket as TicketIcon, TrendingUp, Building2, Tag, ClipboardList } from 'lucide-react'
+
+export default function Dashboard() {
+  const navigate = useNavigate()
+  const [data, setData]       = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => { cargar() }, [])
+
+  async function cargar() {
+    const desde30d = new Date(Date.now() - 30 * 86400000).toISOString()
+
+    const [
+      { data: tickets },
+      { data: ordenes },
+      { data: solicitudes },
+      { data: etq },
+      { data: relEtq },
+    ] = await Promise.all([
+      supabase.from('pd_tickets').select('id, estado, prioridad, cliente_id, created_at, cerrado_at, pd_clientes(razon_social)'),
+      supabase.from('pd_ordenes').select('id, estado, asignado_a, created_at, terminado_at'),
+      supabase.from('pd_solicitudes').select('id, estado, frecuencia, titulo, created_at'),
+      supabase.from('pd_etiquetas').select('id, nombre, color'),
+      supabase.from('pd_ticket_etiquetas').select('etiqueta_id, ticket_id'),
+    ])
+
+    const tks = tickets ?? []
+    const ords = ordenes ?? []
+    const sols = solicitudes ?? []
+
+    // Tiempo promedio de cierre (en horas)
+    const cerrados = tks.filter(t => t.cerrado_at && t.created_at)
+    const promedioHoras = cerrados.length
+      ? cerrados.reduce((s, t) => s + (new Date(t.cerrado_at) - new Date(t.created_at)) / 3600000, 0) / cerrados.length
+      : 0
+
+    // Últimos 30 días
+    const ult30 = tks.filter(t => t.created_at >= desde30d)
+
+    // Clientes más demandantes (por tickets)
+    const porCliente = {}
+    tks.forEach(t => {
+      if (!t.cliente_id) return
+      const nombre = t.pd_clientes?.razon_social ?? 'Cliente'
+      porCliente[t.cliente_id] = porCliente[t.cliente_id] || { nombre, total: 0, id: t.cliente_id }
+      porCliente[t.cliente_id].total += 1
+    })
+    const topClientes = Object.values(porCliente).sort((a, b) => b.total - a.total).slice(0, 5)
+
+    // Etiquetas más usadas
+    const contEtq = {}
+    ;(relEtq ?? []).forEach(r => { contEtq[r.etiqueta_id] = (contEtq[r.etiqueta_id] ?? 0) + 1 })
+    const topEtiquetas = (etq ?? [])
+      .map(e => ({ ...e, total: contEtq[e.id] ?? 0 }))
+      .filter(e => e.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8)
+
+    // Top solicitudes pendientes (por frecuencia)
+    const topSolic = sols
+      .filter(s => s.estado === 'pendiente' || s.estado === 'en_analisis')
+      .sort((a, b) => b.frecuencia - a.frecuencia)
+      .slice(0, 5)
+
+    setData({
+      tickets: {
+        total:           tks.length,
+        abiertos:        tks.filter(t => t.estado === 'abierto').length,
+        en_proceso:      tks.filter(t => t.estado === 'en_proceso').length,
+        esperando:       tks.filter(t => t.estado === 'esperando_cliente').length,
+        cerrados:        tks.filter(t => t.estado === 'cerrado').length,
+        ult30:           ult30.length,
+        promedioHoras,
+      },
+      ordenes: {
+        backlog:         ords.filter(o => o.estado === 'backlog').length,
+        en_progreso:     ords.filter(o => o.estado === 'en_progreso').length,
+        terminado:       ords.filter(o => o.estado === 'terminado').length,
+      },
+      solicitudes: {
+        pendientes:      sols.filter(s => s.estado === 'pendiente').length,
+        en_analisis:     sols.filter(s => s.estado === 'en_analisis').length,
+        aprobadas:       sols.filter(s => s.estado === 'aprobado').length,
+      },
+      topClientes,
+      topEtiquetas,
+      topSolic,
+    })
+    setLoading(false)
+  }
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-500">Cargando dashboard...</div>
+
+  const h = data.tickets.promedioHoras
+  const promedio = h < 1      ? `${Math.round(h * 60)} min`
+                 : h < 48     ? `${h.toFixed(1)} h`
+                 :              `${(h / 24).toFixed(1)} días`
+
+  return (
+    <div className="min-h-screen">
+      <div className="bg-white dark:bg-gray-800 px-4 pt-14 pb-3 border-b border-gray-100 dark:border-gray-700">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <p className="text-xs text-gray-500">Vista global de soporte y desarrollo</p>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Tickets */}
+        <section>
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Tickets</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Stat icon={AlertCircle}  color="text-red-500"     label="Abiertos"     value={data.tickets.abiertos} />
+            <Stat icon={Clock}        color="text-yellow-500"  label="En proceso"   value={data.tickets.en_proceso} />
+            <Stat icon={TicketIcon}   color="text-blue-500"    label="Esperando"    value={data.tickets.esperando} />
+            <Stat icon={CheckCircle2} color="text-emerald-500" label="Cerrados"     value={data.tickets.cerrados} />
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <Stat icon={TrendingUp}   color="text-emerald-500" label="Últimos 30d"        value={data.tickets.ult30} />
+            <Stat icon={Clock}        color="text-gray-500"    label="Tiempo prom. cierre" value={promedio} />
+          </div>
+        </section>
+
+        {/* Órdenes + Solicitudes */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
+            <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2"><ClipboardList size={14} />Desarrollo</p>
+            <div className="space-y-2 text-sm">
+              <Row label="Backlog"     value={data.ordenes.backlog}     color="text-gray-600" />
+              <Row label="En progreso" value={data.ordenes.en_progreso} color="text-yellow-600" />
+              <Row label="Terminadas"  value={data.ordenes.terminado}   color="text-emerald-600" />
+            </div>
+          </section>
+          <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
+            <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3">Solicitudes</p>
+            <div className="space-y-2 text-sm">
+              <Row label="Pendientes"  value={data.solicitudes.pendientes}  color="text-gray-600" />
+              <Row label="En análisis" value={data.solicitudes.en_analisis} color="text-blue-600" />
+              <Row label="Aprobadas"   value={data.solicitudes.aprobadas}   color="text-emerald-600" />
+            </div>
+          </section>
+        </div>
+
+        {/* Clientes más demandantes */}
+        <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
+          <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2"><Building2 size={14} />Clientes más demandantes</p>
+          {data.topClientes.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-3">Sin datos aún.</p>
+          ) : (
+            <div className="space-y-2">
+              {data.topClientes.map(c => (
+                <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)} className="w-full flex items-center justify-between text-left border border-gray-100 rounded-md p-2.5 active:bg-gray-50">
+                  <span className="text-sm text-gray-900 dark:text-white truncate">{c.nombre}</span>
+                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{c.total} tickets</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Problemas frecuentes */}
+        <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
+          <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2"><Tag size={14} />Problemas más frecuentes</p>
+          {data.topEtiquetas.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-3">Asigná etiquetas a los tickets para verlo.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {data.topEtiquetas.map(e => (
+                <span key={e.id} className="px-3 py-1.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: e.color }}>
+                  {e.nombre} · {e.total}
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Solicitudes top */}
+        <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
+          <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3">Top solicitudes pendientes</p>
+          {data.topSolic.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-3">Sin solicitudes activas.</p>
+          ) : (
+            <div className="space-y-2">
+              {data.topSolic.map(s => (
+                <button key={s.id} onClick={() => navigate(`/solicitudes/${s.id}`)} className="w-full flex items-center justify-between text-left border border-gray-100 rounded-md p-2.5 active:bg-gray-50">
+                  <span className="text-sm text-gray-900 dark:text-white truncate">{s.titulo}</span>
+                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0 ml-2">× {s.frecuencia}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  )
+}
+
+function Stat({ icon: Icon, color, label, value }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+      <div className="flex items-center gap-2 mb-1">
+        <Icon size={16} className={color} />
+        <p className="text-xs text-gray-500">{label}</p>
+      </div>
+      <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+    </div>
+  )
+}
+
+function Row({ label, value, color }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-gray-600 dark:text-gray-400">{label}</span>
+      <span className={`font-semibold ${color}`}>{value}</span>
+    </div>
+  )
+}

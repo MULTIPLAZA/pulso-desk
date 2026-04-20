@@ -1,12 +1,18 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Building2, Ticket, MoreHorizontal, PlusCircle } from 'lucide-react'
+import { LayoutDashboard, Building2, Ticket, Lightbulb, ClipboardList, BarChart3, MoreHorizontal, PlusCircle } from 'lucide-react'
 
-const items = [
-  { to: '/',         icon: LayoutDashboard, label: 'Inicio'   },
-  { to: '/tickets',  icon: Ticket,          label: 'Tickets'  },
-  { to: '/clientes', icon: Building2,       label: 'Clientes' },
-  { to: '/tickets/nuevo', icon: PlusCircle, label: 'Nuevo ticket' },
-  { to: '/mas',      icon: MoreHorizontal,  label: 'Más'      },
+const mainItems = [
+  { to: '/',            icon: LayoutDashboard, label: 'Inicio'      },
+  { to: '/tickets',     icon: Ticket,          label: 'Tickets'     },
+  { to: '/solicitudes', icon: Lightbulb,       label: 'Solicitudes' },
+  { to: '/ordenes',     icon: ClipboardList,   label: 'Órdenes'     },
+  { to: '/clientes',    icon: Building2,       label: 'Clientes'    },
+]
+
+const moreItems = [
+  { to: '/dashboard',     icon: BarChart3,      label: 'Dashboard' },
+  { to: '/tickets/nuevo', icon: PlusCircle,     label: 'Nuevo ticket' },
+  { to: '/mas',           icon: MoreHorizontal, label: 'Más'       },
 ]
 
 function Item({ to, icon: Icon, label }) {
@@ -36,7 +42,9 @@ export default function Sidebar() {
         <p className="text-xs text-gray-400 dark:text-gray-500">Desk</p>
       </div>
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-        {items.map(it => <Item key={it.to} {...it} />)}
+        {mainItems.map(it => <Item key={it.to} {...it} />)}
+        <div className="my-3 border-t border-gray-100 dark:border-gray-700" />
+        {moreItems.map(it => <Item key={it.to} {...it} />)}
       </nav>
     </aside>
   )
