@@ -1,6 +1,7 @@
 -- =============================================
 -- Pulso Desk — Migration Fase 2.2: sistemas como tabla gestionable
--- Ejecutar en: Supabase > SQL Editor (después de migration-fase2.1-ordenes.sql)
+-- Ejecutar en: Supabase > SQL Editor
+-- Idempotente: se puede correr aunque ya se haya corrido parcialmente.
 -- =============================================
 
 -- 1. Tabla de sistemas
@@ -15,6 +16,9 @@ CREATE TABLE IF NOT EXISTS pd_sistemas (
 
 -- 2. RLS: todos leen, solo admin escribe
 ALTER TABLE pd_sistemas ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS pd_sistemas_read  ON pd_sistemas;
+DROP POLICY IF EXISTS pd_sistemas_write ON pd_sistemas;
 
 CREATE POLICY pd_sistemas_read ON pd_sistemas FOR SELECT
   USING (pd_rol_actual() IN ('admin', 'desarrollador', 'soporte'));
@@ -33,17 +37,24 @@ INSERT INTO pd_sistemas (nombre, color) VALUES
   ('Otro',          '#64748b')
 ON CONFLICT (nombre) DO NOTHING;
 
--- 4. Agregar columna FK en pd_ordenes
+-- 4. Agregar columna FK en pd_ordenes (si no existe)
 ALTER TABLE pd_ordenes ADD COLUMN IF NOT EXISTS sistema_id UUID REFERENCES pd_sistemas(id) ON DELETE SET NULL;
 
--- 5. Migrar datos existentes: match por nombre
-UPDATE pd_ordenes o
-SET sistema_id = s.id
-FROM pd_sistemas s
-WHERE o.sistema = s.nombre AND o.sistema_id IS NULL;
+-- 5. Si existe la columna legacy 'sistema', migrar datos y luego eliminarla
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'pd_ordenes' AND column_name = 'sistema'
+  ) THEN
+    UPDATE pd_ordenes o
+    SET sistema_id = s.id
+    FROM pd_sistemas s
+    WHERE o.sistema = s.nombre AND o.sistema_id IS NULL;
 
--- 6. Eliminar la columna de texto legacy
-ALTER TABLE pd_ordenes DROP COLUMN IF EXISTS sistema;
+    ALTER TABLE pd_ordenes DROP COLUMN sistema;
+  END IF;
+END $$;
 
--- Índice para filtrar rápido
+-- 6. Índice para filtrar rápido por sistema
 CREATE INDEX IF NOT EXISTS idx_pd_ordenes_sistema_id ON pd_ordenes(sistema_id);
