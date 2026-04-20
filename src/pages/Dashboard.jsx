@@ -76,7 +76,7 @@ export default function Dashboard() {
         promedioHoras,
       },
       ordenes: {
-        backlog:         ords.filter(o => o.estado === 'backlog').length,
+        pendiente:       ords.filter(o => o.estado === 'pendiente' || o.estado === 'backlog').length,
         en_progreso:     ords.filter(o => o.estado === 'en_progreso').length,
         terminado:       ords.filter(o => o.estado === 'terminado').length,
       },
@@ -127,7 +127,7 @@ export default function Dashboard() {
           <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
             <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2"><ClipboardList size={14} />Desarrollo</p>
             <div className="space-y-2 text-sm">
-              <Row label="Backlog"     value={data.ordenes.backlog}     color="text-gray-600" />
+              <Row label="Pendientes"  value={data.ordenes.pendiente}   color="text-gray-600" />
               <Row label="En progreso" value={data.ordenes.en_progreso} color="text-yellow-600" />
               <Row label="Terminadas"  value={data.ordenes.terminado}   color="text-emerald-600" />
             </div>

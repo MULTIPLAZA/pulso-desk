@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { ArrowLeft, Save } from 'lucide-react'
+import { SISTEMAS } from '../lib/ordenes'
 
 export default function NuevaOrden() {
   const navigate    = useNavigate()
@@ -14,11 +15,14 @@ export default function NuevaOrden() {
   const [usuarios, setUsuarios] = useState([])
   const [form, setForm] = useState({
     titulo:              '',
+    funcionalidad:       '',
+    sistema:             '',
     descripcion_tecnica: '',
     complejidad:         'media',
     prioridad:           'media',
-    estado:              'backlog',
+    estado:              'pendiente',
     asignado_a:          '',
+    fecha_objetivo:      '',
   })
   const [error, setError]         = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -34,8 +38,10 @@ export default function NuevaOrden() {
     setGuardando(true)
     const payload = {
       ...form,
-      asignado_a: form.asignado_a || null,
-      creado_por: perfil.id,
+      sistema:        form.sistema        || null,
+      asignado_a:     form.asignado_a     || null,
+      fecha_objetivo: form.fecha_objetivo || null,
+      creado_por:     perfil.id,
     }
     const { data: orden, error: err } = await supabase.from('pd_ordenes').insert(payload).select().single()
     if (err) { setError(err.message); setGuardando(false); return }
@@ -62,13 +68,32 @@ export default function NuevaOrden() {
             Se va a vincular con {ticketId && `ticket seleccionado`}{ticketId && solicitudId && ' y '}{solicitudId && `solicitud seleccionada`}.
           </div>
         )}
+
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4 space-y-3">
           <Campo label="Título *">
             <input required value={form.titulo} onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} className={inputCls} placeholder="Ej: Reporte ventas por vendedor" />
           </Campo>
+
+          <Campo label="Funcionalidad (qué cambia / qué se agrega)">
+            <input value={form.funcionalidad} onChange={e => setForm(f => ({ ...f, funcionalidad: e.target.value }))} className={inputCls} placeholder="Ej: Filtro por fecha + totales por vendedor" />
+          </Campo>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Campo label="Sistema a cambiar">
+              <select value={form.sistema} onChange={e => setForm(f => ({ ...f, sistema: e.target.value }))} className={inputCls}>
+                <option value="">— Elegir —</option>
+                {SISTEMAS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Campo>
+            <Campo label="Fecha objetivo (opcional)">
+              <input type="date" value={form.fecha_objetivo} onChange={e => setForm(f => ({ ...f, fecha_objetivo: e.target.value }))} className={inputCls} />
+            </Campo>
+          </div>
+
           <Campo label="Descripción técnica">
             <textarea rows={4} value={form.descripcion_tecnica} onChange={e => setForm(f => ({ ...f, descripcion_tecnica: e.target.value }))} className={inputCls} placeholder="Notas técnicas: endpoints, tablas, consideraciones..." />
           </Campo>
+
           <div className="grid grid-cols-3 gap-3">
             <Campo label="Complejidad">
               <select value={form.complejidad} onChange={e => setForm(f => ({ ...f, complejidad: e.target.value }))} className={inputCls}>
@@ -86,11 +111,12 @@ export default function NuevaOrden() {
             </Campo>
             <Campo label="Estado">
               <select value={form.estado} onChange={e => setForm(f => ({ ...f, estado: e.target.value }))} className={inputCls}>
-                <option value="backlog">Backlog</option>
+                <option value="pendiente">Pendiente</option>
                 <option value="en_progreso">En progreso</option>
               </select>
             </Campo>
           </div>
+
           <Campo label="Asignar a">
             <select value={form.asignado_a} onChange={e => setForm(f => ({ ...f, asignado_a: e.target.value }))} className={inputCls}>
               <option value="">— Sin asignar —</option>

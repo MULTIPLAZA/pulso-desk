@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { ArrowLeft, Trash2, Ticket, Lightbulb, Plus, X } from 'lucide-react'
-import { format } from 'date-fns'
+import { ArrowLeft, Trash2, Ticket, Lightbulb, Plus, X, Send, MessageSquare, Calendar, AlertTriangle } from 'lucide-react'
+import { format, formatDistanceToNow } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { SISTEMAS, diasDesde, diasTexto, colorDias } from '../lib/ordenes'
 
 const ESTADOS = [
-  { value: 'backlog',     label: '📋 Backlog'       },
-  { value: 'en_progreso', label: '🛠 En progreso'  },
-  { value: 'terminado',   label: '✅ Terminado'     },
+  { value: 'pendiente',   label: '⏳ Pendiente'   },
+  { value: 'en_progreso', label: '🛠 En progreso' },
+  { value: 'terminado',   label: '✅ Terminado'   },
 ]
 
 const PRIO = [
@@ -31,8 +33,12 @@ export default function OrdenDetalle() {
   const [tickets, setTickets]     = useState([])
   const [solicitudes, setSolic]   = useState([])
   const [usuarios, setUsuarios]   = useState([])
+  const [notas, setNotas]         = useState([])
+  const [notasAutor, setNotasAutor] = useState({})
+  const [nuevaNota, setNuevaNota] = useState('')
+  const [enviandoNota, setEnviandoNota] = useState(false)
   const [loading, setLoading]     = useState(true)
-  const [vincSheet, setVincSheet] = useState(null) // 'ticket' | 'solicitud' | null
+  const [vincSheet, setVincSheet] = useState(null)
   const [disponibles, setDisp]    = useState([])
   const [filtroDisp, setFiltroDisp] = useState('')
 
@@ -40,16 +46,19 @@ export default function OrdenDetalle() {
 
   async function cargar() {
     setLoading(true)
-    const [{ data: o }, { data: tks }, { data: sls }, { data: us }] = await Promise.all([
+    const [{ data: o }, { data: tks }, { data: sls }, { data: us }, { data: ns }] = await Promise.all([
       supabase.from('pd_ordenes').select('*').eq('id', id).single(),
       supabase.from('pd_orden_ticket').select('pd_tickets(id, numero, titulo, estado)').eq('orden_id', id),
       supabase.from('pd_orden_solicitud').select('pd_solicitudes(id, numero, titulo, estado)').eq('orden_id', id),
       supabase.from('pd_usuarios_perfil').select('id, nombre, rol').eq('activo', true),
+      supabase.from('pd_orden_notas').select('*').eq('orden_id', id).order('created_at', { ascending: false }),
     ])
     setOrden(o)
     setTickets((tks ?? []).map(x => x.pd_tickets).filter(Boolean))
     setSolic((sls ?? []).map(x => x.pd_solicitudes).filter(Boolean))
     setUsuarios(us ?? [])
+    setNotas(ns ?? [])
+    setNotasAutor(Object.fromEntries((us ?? []).map(u => [u.id, u.nombre])))
     setLoading(false)
   }
 
@@ -61,10 +70,30 @@ export default function OrdenDetalle() {
     cargar()
   }
 
+  async function agregarNota(e) {
+    e.preventDefault()
+    if (!nuevaNota.trim()) return
+    setEnviandoNota(true)
+    await supabase.from('pd_orden_notas').insert({
+      orden_id: id,
+      autor_id: perfil.id,
+      nota:     nuevaNota.trim(),
+    })
+    setNuevaNota('')
+    setEnviandoNota(false)
+    cargar()
+  }
+
+  async function borrarNota(notaId) {
+    if (!confirm('¿Eliminar observación?')) return
+    await supabase.from('pd_orden_notas').delete().eq('id', notaId)
+    cargar()
+  }
+
   async function abrirVincular(tipo) {
     setVincSheet(tipo)
     setFiltroDisp('')
-    const tabla  = tipo === 'ticket' ? 'pd_tickets' : 'pd_solicitudes'
+    const tabla = tipo === 'ticket' ? 'pd_tickets' : 'pd_solicitudes'
     const { data } = await supabase.from(tabla).select('id, numero, titulo, estado').order('created_at', { ascending: false }).limit(50)
     const ya = tipo === 'ticket' ? tickets.map(x => x.id) : solicitudes.map(x => x.id)
     setDisp((data ?? []).filter(x => !ya.includes(x.id)))
@@ -95,6 +124,10 @@ export default function OrdenDetalle() {
   if (!orden)  return <div className="min-h-screen flex items-center justify-center text-gray-500">No encontrada</div>
 
   const puedeEditar = perfil.rol === 'admin' || perfil.rol === 'desarrollador'
+  const dias = diasDesde(orden.created_at)
+  const colorD = colorDias(dias, orden.estado)
+  const vencida = orden.fecha_objetivo && new Date(orden.fecha_objetivo) < new Date() && orden.estado !== 'terminado'
+
   const q = filtroDisp.toLowerCase()
   const dispFiltrados = disponibles.filter(x => !filtroDisp || x.titulo.toLowerCase().includes(q) || String(x.numero).includes(filtroDisp))
 
@@ -114,6 +147,21 @@ export default function OrdenDetalle() {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Barra de edad + vencimiento */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`text-sm px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${colorD}`}>
+            📅 {diasTexto(dias)}
+          </span>
+          {orden.fecha_objetivo && (
+            <span className={`text-sm px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 border flex items-center gap-1 ${vencida ? 'border-red-200 text-red-700' : 'border-gray-100 text-gray-600'}`}>
+              <Calendar size={12} />
+              {vencida && <AlertTriangle size={12} />}
+              Objetivo: {format(new Date(orden.fecha_objetivo), 'dd/MM/yy')}
+            </span>
+          )}
+        </div>
+
+        {/* Datos principales */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4 space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <Campo label="Estado">
@@ -132,16 +180,82 @@ export default function OrdenDetalle() {
               </select>
             </Campo>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Campo label="Sistema a cambiar">
+              <select disabled={!puedeEditar} value={orden.sistema ?? ''} onChange={e => cambiar('sistema', e.target.value || null)} className={inputCls}>
+                <option value="">—</option>
+                {SISTEMAS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Campo>
+            <Campo label="Fecha objetivo">
+              <input type="date" disabled={!puedeEditar} value={orden.fecha_objetivo ?? ''} onChange={e => cambiar('fecha_objetivo', e.target.value || null)} className={inputCls} />
+            </Campo>
+          </div>
+
           <Campo label="Asignado a">
             <select disabled={!puedeEditar} value={orden.asignado_a ?? ''} onChange={e => cambiar('asignado_a', e.target.value || null)} className={inputCls}>
               <option value="">— Sin asignar —</option>
               {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.rol})</option>)}
             </select>
           </Campo>
+
+          {orden.funcionalidad && (
+            <div>
+              <p className="text-xs text-gray-400 mb-1">Funcionalidad</p>
+              <p className="text-sm text-gray-900 dark:text-gray-200">{orden.funcionalidad}</p>
+            </div>
+          )}
           {orden.descripcion_tecnica && (
             <div>
               <p className="text-xs text-gray-400 mb-1">Descripción técnica</p>
               <p className="text-sm text-gray-900 dark:text-gray-200 whitespace-pre-line font-mono">{orden.descripcion_tecnica}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Bitácora */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
+          <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <MessageSquare size={14} />Bitácora de observaciones
+            <span className="text-xs text-gray-400 font-normal">({notas.length})</span>
+          </p>
+
+          {puedeEditar && (
+            <form onSubmit={agregarNota} className="mb-4 space-y-2">
+              <textarea
+                rows={2}
+                value={nuevaNota}
+                onChange={e => setNuevaNota(e.target.value)}
+                placeholder="Ej: Ya terminé el backend, falta la UI"
+                className={inputCls}
+              />
+              <button type="submit" disabled={enviandoNota || !nuevaNota.trim()} className="w-full py-2 rounded-md bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+                <Send size={14} />{enviandoNota ? 'Guardando...' : 'Agregar observación'}
+              </button>
+            </form>
+          )}
+
+          {notas.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-3">Sin observaciones. Anotá avances a medida que trabajás.</p>
+          ) : (
+            <div className="space-y-2">
+              {notas.map(n => (
+                <div key={n.id} className="border border-gray-100 dark:border-gray-700 rounded-md p-3 bg-gray-50 dark:bg-gray-900/30">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      {notasAutor[n.autor_id] ?? 'Sistema'}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: es })}</p>
+                      {perfil.rol === 'admin' && (
+                        <button onClick={() => borrarNota(n.id)} className="text-red-400"><X size={12} /></button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line">{n.nota}</p>
+                </div>
+              ))}
             </div>
           )}
         </div>
