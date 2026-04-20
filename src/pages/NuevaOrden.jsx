@@ -6,6 +6,12 @@ import { ArrowLeft, Save, Lightbulb, Ticket } from 'lucide-react'
 
 const IMPACTO_A_PRIORIDAD = { alto: 'alta', medio: 'media', bajo: 'baja' }
 
+function fechaEnUnaSemana() {
+  const d = new Date()
+  d.setDate(d.getDate() + 7)
+  return d.toISOString().slice(0, 10)
+}
+
 export default function NuevaOrden() {
   const navigate    = useNavigate()
   const [sp]        = useSearchParams()
@@ -27,7 +33,7 @@ export default function NuevaOrden() {
     prioridad:           'media',
     estado:              'pendiente',
     asignado_a:          '',
-    fecha_objetivo:      '',
+    fecha_objetivo:      fechaEnUnaSemana(),
   })
   const [error, setError]         = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -144,8 +150,15 @@ export default function NuevaOrden() {
                 {sistemas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </Campo>
-            <Campo label="Fecha objetivo (opcional)">
-              <input type="date" value={form.fecha_objetivo} onChange={e => setForm(f => ({ ...f, fecha_objetivo: e.target.value }))} className={inputCls} />
+            <Campo label="Fecha objetivo (opcional · default 1 semana)">
+              <div className="flex gap-2">
+                <input type="date" value={form.fecha_objetivo} onChange={e => setForm(f => ({ ...f, fecha_objetivo: e.target.value }))} className={inputCls + ' flex-1'} />
+                {form.fecha_objetivo && (
+                  <button type="button" onClick={() => setForm(f => ({ ...f, fecha_objetivo: '' }))} className="px-2 py-2 text-xs text-gray-500 border border-gray-200 rounded-md">
+                    Sin fecha
+                  </button>
+                )}
+              </div>
             </Campo>
           </div>
 
