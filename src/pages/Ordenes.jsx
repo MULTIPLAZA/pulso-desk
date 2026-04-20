@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Search, PlusCircle, ClipboardList, AlertTriangle } from 'lucide-react'
-import { SISTEMAS, ESTADO_CFG, PRIO_CFG, diasDesde, diasTexto, colorDias } from '../lib/ordenes'
+import { Search, PlusCircle, ClipboardList, AlertTriangle, Server } from 'lucide-react'
+import { ESTADO_CFG, PRIO_CFG, diasDesde, diasTexto, colorDias } from '../lib/ordenes'
 
 const FILTROS_ESTADO = [
   { value: 'activas',     label: 'Activas'      },
@@ -17,21 +17,24 @@ export default function Ordenes() {
   const navigate    = useNavigate()
   const { perfil }  = useAuth()
   const [lista, setLista]       = useState([])
+  const [sistemas, setSistemas] = useState([])
   const [usuarios, setUsuarios] = useState({})
   const [estado, setEstado]     = useState('activas')
-  const [sistema, setSistema]   = useState('')
+  const [sistemaId, setSistemaId] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => { cargar() }, [])
 
   async function cargar() {
-    const [{ data: ords }, { data: us }] = await Promise.all([
-      supabase.from('pd_ordenes').select('id, numero, titulo, funcionalidad, sistema, estado, prioridad, complejidad, asignado_a, created_at, fecha_objetivo').order('created_at', { ascending: false }),
+    const [{ data: ords }, { data: us }, { data: sis }] = await Promise.all([
+      supabase.from('pd_ordenes').select('id, numero, titulo, funcionalidad, sistema_id, estado, prioridad, complejidad, asignado_a, created_at, fecha_objetivo, pd_sistemas(id, nombre, color)').order('created_at', { ascending: false }),
       supabase.from('pd_usuarios_perfil').select('id, nombre'),
+      supabase.from('pd_sistemas').select('id, nombre, color').eq('activo', true).order('nombre'),
     ])
     setLista(ords ?? [])
     setUsuarios(Object.fromEntries((us ?? []).map(u => [u.id, u.nombre])))
+    setSistemas(sis ?? [])
     setLoading(false)
   }
 
@@ -45,7 +48,7 @@ export default function Ordenes() {
         if (estado === 'activas')  return o.estado !== 'terminado'
         return o.estado === estado
       })
-      .filter(o => !sistema  || o.sistema === sistema)
+      .filter(o => !sistemaId || o.sistema_id === sistemaId)
       .filter(o => {
         if (!busqueda) return true
         return (o.titulo?.toLowerCase().includes(q))
@@ -53,18 +56,15 @@ export default function Ordenes() {
             || String(o.numero).includes(busqueda)
       })
       .sort((a, b) => {
-        // activos primero, luego terminados
-        const aTerm = a.estado === 'terminado' ? 1 : 0
-        const bTerm = b.estado === 'terminado' ? 1 : 0
-        if (aTerm !== bTerm) return aTerm - bTerm
-        // dentro de activos: prioridad alta primero
+        const aT = a.estado === 'terminado' ? 1 : 0
+        const bT = b.estado === 'terminado' ? 1 : 0
+        if (aT !== bT) return aT - bT
         const pa = PRIO_CFG[a.prioridad]?.orden ?? 9
         const pb = PRIO_CFG[b.prioridad]?.orden ?? 9
         if (pa !== pb) return pa - pb
-        // a igual prioridad, más antiguas primero (más urgente)
         return new Date(a.created_at) - new Date(b.created_at)
       })
-  }, [lista, estado, sistema, busqueda])
+  }, [lista, estado, sistemaId, busqueda])
 
   return (
     <div className="min-h-screen">
@@ -72,7 +72,7 @@ export default function Ordenes() {
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Órdenes de trabajo</h1>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500">{lista.length} total</span>
+            <button onClick={() => navigate('/sistemas')} className="text-gray-500 text-sm flex items-center gap-1"><Server size={14} />Sistemas</button>
             {puedeCrear && (
               <button onClick={() => navigate('/ordenes/nueva')} className="flex items-center gap-1 text-emerald-600 text-sm font-medium">
                 <PlusCircle size={15} />Nueva
@@ -108,22 +108,22 @@ export default function Ordenes() {
 
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           <button
-            onClick={() => setSistema('')}
+            onClick={() => setSistemaId('')}
             className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
-              !sistema ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
+              !sistemaId ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
             }`}
           >
             Todos los sistemas
           </button>
-          {SISTEMAS.map(s => (
+          {sistemas.map(s => (
             <button
-              key={s}
-              onClick={() => setSistema(s)}
-              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
-                sistema === s ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
-              }`}
+              key={s.id}
+              onClick={() => setSistemaId(s.id)}
+              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 flex items-center gap-1.5`}
+              style={sistemaId === s.id ? { backgroundColor: s.color, color: 'white' } : { backgroundColor: '#f3f4f6', color: '#4b5563' }}
             >
-              {s}
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+              {s.nombre}
             </button>
           ))}
         </div>
@@ -144,6 +144,7 @@ export default function Ordenes() {
           const d = diasDesde(o.created_at)
           const colorD = colorDias(d, o.estado)
           const vencida = o.fecha_objetivo && new Date(o.fecha_objetivo) < new Date() && o.estado !== 'terminado'
+          const sis = o.pd_sistemas
           return (
             <div
               key={o.id}
@@ -154,8 +155,10 @@ export default function Ordenes() {
                 <span className="text-xs text-gray-400">#{o.numero}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${e.bg} ${e.text}`}>{e.label}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.bg} ${p.text}`}>{p.emoji} {o.prioridad}</span>
-                {o.sistema && (
-                  <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">{o.sistema}</span>
+                {sis && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium text-white flex items-center gap-1" style={{ backgroundColor: sis.color }}>
+                    {sis.nombre}
+                  </span>
                 )}
                 {vencida && (
                   <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium flex items-center gap-1"><AlertTriangle size={10} />Vencida</span>

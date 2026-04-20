@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { ArrowLeft, Save } from 'lucide-react'
-import { SISTEMAS } from '../lib/ordenes'
 
 export default function NuevaOrden() {
   const navigate    = useNavigate()
@@ -11,12 +10,14 @@ export default function NuevaOrden() {
   const { perfil }  = useAuth()
   const ticketId    = sp.get('ticket')
   const solicitudId = sp.get('solicitud')
+  const sistemaPre  = sp.get('sistema')
 
   const [usuarios, setUsuarios] = useState([])
+  const [sistemas, setSistemas] = useState([])
   const [form, setForm] = useState({
     titulo:              '',
     funcionalidad:       '',
-    sistema:             '',
+    sistema_id:          sistemaPre ?? '',
     descripcion_tecnica: '',
     complejidad:         'media',
     prioridad:           'media',
@@ -29,6 +30,7 @@ export default function NuevaOrden() {
 
   useEffect(() => {
     supabase.from('pd_usuarios_perfil').select('id, nombre, rol').eq('activo', true).order('nombre').then(({ data }) => setUsuarios(data ?? []))
+    supabase.from('pd_sistemas').select('id, nombre').eq('activo', true).order('nombre').then(({ data }) => setSistemas(data ?? []))
   }, [])
 
   async function handleSubmit(e) {
@@ -38,7 +40,7 @@ export default function NuevaOrden() {
     setGuardando(true)
     const payload = {
       ...form,
-      sistema:        form.sistema        || null,
+      sistema_id:     form.sistema_id     || null,
       asignado_a:     form.asignado_a     || null,
       fecha_objetivo: form.fecha_objetivo || null,
       creado_por:     perfil.id,
@@ -80,15 +82,21 @@ export default function NuevaOrden() {
 
           <div className="grid grid-cols-2 gap-3">
             <Campo label="Sistema a cambiar">
-              <select value={form.sistema} onChange={e => setForm(f => ({ ...f, sistema: e.target.value }))} className={inputCls}>
+              <select value={form.sistema_id} onChange={e => setForm(f => ({ ...f, sistema_id: e.target.value }))} className={inputCls}>
                 <option value="">— Elegir —</option>
-                {SISTEMAS.map(s => <option key={s} value={s}>{s}</option>)}
+                {sistemas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </Campo>
             <Campo label="Fecha objetivo (opcional)">
               <input type="date" value={form.fecha_objetivo} onChange={e => setForm(f => ({ ...f, fecha_objetivo: e.target.value }))} className={inputCls} />
             </Campo>
           </div>
+
+          {sistemas.length === 0 && (
+            <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-md px-3 py-2">
+              Todavía no hay sistemas creados. Pedile al admin que los cargue en <strong>Sistemas</strong>.
+            </p>
+          )}
 
           <Campo label="Descripción técnica">
             <textarea rows={4} value={form.descripcion_tecnica} onChange={e => setForm(f => ({ ...f, descripcion_tecnica: e.target.value }))} className={inputCls} placeholder="Notas técnicas: endpoints, tablas, consideraciones..." />

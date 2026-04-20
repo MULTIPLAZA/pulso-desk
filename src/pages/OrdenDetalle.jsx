@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth'
 import { ArrowLeft, Trash2, Ticket, Lightbulb, Plus, X, Send, MessageSquare, Calendar, AlertTriangle } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { SISTEMAS, diasDesde, diasTexto, colorDias } from '../lib/ordenes'
+import { diasDesde, diasTexto, colorDias } from '../lib/ordenes'
 
 const ESTADOS = [
   { value: 'pendiente',   label: '⏳ Pendiente'   },
@@ -33,6 +33,7 @@ export default function OrdenDetalle() {
   const [tickets, setTickets]     = useState([])
   const [solicitudes, setSolic]   = useState([])
   const [usuarios, setUsuarios]   = useState([])
+  const [sistemas, setSistemas]   = useState([])
   const [notas, setNotas]         = useState([])
   const [notasAutor, setNotasAutor] = useState({})
   const [nuevaNota, setNuevaNota] = useState('')
@@ -46,14 +47,16 @@ export default function OrdenDetalle() {
 
   async function cargar() {
     setLoading(true)
-    const [{ data: o }, { data: tks }, { data: sls }, { data: us }, { data: ns }] = await Promise.all([
-      supabase.from('pd_ordenes').select('*').eq('id', id).single(),
+    const [{ data: o }, { data: tks }, { data: sls }, { data: us }, { data: ns }, { data: sis }] = await Promise.all([
+      supabase.from('pd_ordenes').select('*, pd_sistemas(id, nombre, color)').eq('id', id).single(),
       supabase.from('pd_orden_ticket').select('pd_tickets(id, numero, titulo, estado)').eq('orden_id', id),
       supabase.from('pd_orden_solicitud').select('pd_solicitudes(id, numero, titulo, estado)').eq('orden_id', id),
       supabase.from('pd_usuarios_perfil').select('id, nombre, rol').eq('activo', true),
       supabase.from('pd_orden_notas').select('*').eq('orden_id', id).order('created_at', { ascending: false }),
+      supabase.from('pd_sistemas').select('id, nombre').eq('activo', true).order('nombre'),
     ])
     setOrden(o)
+    setSistemas(sis ?? [])
     setTickets((tks ?? []).map(x => x.pd_tickets).filter(Boolean))
     setSolic((sls ?? []).map(x => x.pd_solicitudes).filter(Boolean))
     setUsuarios(us ?? [])
@@ -183,9 +186,9 @@ export default function OrdenDetalle() {
 
           <div className="grid grid-cols-2 gap-3">
             <Campo label="Sistema a cambiar">
-              <select disabled={!puedeEditar} value={orden.sistema ?? ''} onChange={e => cambiar('sistema', e.target.value || null)} className={inputCls}>
+              <select disabled={!puedeEditar} value={orden.sistema_id ?? ''} onChange={e => cambiar('sistema_id', e.target.value || null)} className={inputCls}>
                 <option value="">—</option>
-                {SISTEMAS.map(s => <option key={s} value={s}>{s}</option>)}
+                {sistemas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </Campo>
             <Campo label="Fecha objetivo">

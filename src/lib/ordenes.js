@@ -1,13 +1,3 @@
-export const SISTEMAS = [
-  'POS',
-  'SIFEN Engine',
-  'Panel Web',
-  'XMLBox',
-  'CRM-Contactos',
-  'Pulso Desk',
-  'Otro',
-]
-
 export const ESTADO_CFG = {
   pendiente:   { bg: 'bg-gray-100',    text: 'text-gray-700',     label: '⏳ Pendiente'   },
   en_progreso: { bg: 'bg-yellow-100',  text: 'text-yellow-700',   label: '🛠 En progreso' },
@@ -31,7 +21,6 @@ export function diasTexto(d) {
   return `Hace ${d} días`
 }
 
-// Rojo si pasó mucho tiempo sin terminar; no aplica a terminadas
 export function colorDias(d, estado) {
   if (estado === 'terminado') return 'text-gray-400'
   if (d >= 14) return 'text-red-600 font-semibold'
