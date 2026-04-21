@@ -6,6 +6,7 @@ import { ArrowLeft, Trash2, Ticket, Lightbulb, Plus, X, Send, MessageSquare, Cal
 import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { diasDesde, diasTexto, colorDias } from '../lib/ordenes'
+import Adjuntos from '../components/Adjuntos'
 
 const ESTADOS = [
   { value: 'pendiente',   label: '⏳ Pendiente'   },
@@ -262,6 +263,8 @@ export default function OrdenDetalle() {
             </div>
           )}
         </div>
+
+        <Adjuntos tipo="orden" id={orden.id} />
 
         <Vinculados
           titulo="Tickets relacionados" icon={Ticket} items={tickets} tipo="ticket"

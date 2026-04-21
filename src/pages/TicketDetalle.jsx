@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth, puedeBorrarTicket } from '../lib/auth'
 import { ArrowLeft, Send, Tag, Trash2, MessageCircle, User, Clock, Building2, ClipboardList, CheckCircle2, RotateCcw } from 'lucide-react'
 import { linkWhatsApp, formatearTelefonoPY } from '../lib/phone'
+import Adjuntos from '../components/Adjuntos'
 import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -199,6 +200,8 @@ export default function TicketDetalle() {
             </div>
           )}
         </div>
+
+        <Adjuntos tipo="ticket" id={ticket.id} />
 
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between mb-3">
