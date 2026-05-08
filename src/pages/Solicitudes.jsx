@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Search, PlusCircle, Lightbulb } from 'lucide-react'
+import { Search, Lightbulb } from 'lucide-react'
 import { format } from 'date-fns'
 import TabsTickets from '../components/TabsTickets'
 
@@ -68,14 +68,9 @@ export default function Solicitudes() {
         <div className="absolute -right-4 -top-2 opacity-15 pointer-events-none">
           <Lightbulb size={110} color="white" strokeWidth={1.5} />
         </div>
-        <div className="flex items-center justify-between relative">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Solicitudes</h1>
-            <p className="text-xs text-white/80">{lista.length} total · ideas y mejoras</p>
-          </div>
-          <button onClick={() => navigate('/solicitudes/nueva')} className="flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-md border border-white/30">
-            <PlusCircle size={15} />Nueva
-          </button>
+        <div className="relative">
+          <h1 className="text-2xl font-bold text-white">Solicitudes</h1>
+          <p className="text-xs text-white/80">{lista.length} total · ideas y mejoras</p>
         </div>
       </div>
 

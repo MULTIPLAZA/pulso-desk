@@ -9,7 +9,7 @@ const mainItems = [
 
 const moreItems = [
   { to: '/dashboard',     icon: BarChart3,      label: 'Dashboard' },
-  { to: '/tickets/nuevo', icon: PlusCircle,     label: 'Nuevo ticket' },
+  { to: '/tickets/nuevo', icon: PlusCircle,     label: 'Generar ticket' },
   { to: '/mas',           icon: MoreHorizontal, label: 'Más'       },
 ]
 

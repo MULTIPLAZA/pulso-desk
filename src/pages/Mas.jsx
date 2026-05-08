@@ -31,8 +31,7 @@ export default function Mas() {
           {perfil.rol === 'admin' && (
             <LinkRow to="/usuarios"      icon={Users}      label="Usuarios del equipo" />
           )}
-          <LinkRow to="/tickets/nuevo"   icon={PlusCircle} label="Nuevo ticket" />
-          <LinkRow to="/solicitudes/nueva" icon={PlusCircle} label="Nueva solicitud" last />
+          <LinkRow to="/tickets/nuevo"   icon={PlusCircle} label="Generar ticket" last />
         </div>
 
         <button

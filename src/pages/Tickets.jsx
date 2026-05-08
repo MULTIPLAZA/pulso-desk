@@ -75,7 +75,7 @@ export default function Tickets() {
           </div>
           {puedeCrearTickets(perfil.rol) && (
             <button onClick={() => navigate('/tickets/nuevo')} className="flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-md border border-white/30">
-              <PlusCircle size={15} />Nuevo
+              <PlusCircle size={15} />Generar ticket
             </button>
           )}
         </div>
