@@ -57,7 +57,7 @@ function AppShell() {
   return (
     <BrowserRouter>
       <Sidebar />
-      <div className="lg:pl-56 lg:pr-56">
+      <div className="lg:pl-56">
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16 lg:pb-0 max-w-lg lg:max-w-6xl mx-auto lg:px-6 lg:[&>div:first-child>div:first-child]:pt-6">
           <Suspense fallback={<CargandoPagina />}>
             <Routes>

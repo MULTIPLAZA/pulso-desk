@@ -144,6 +144,7 @@ export default function Sistemas() {
           </div>
         )}
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
         {lista.map(s => {
           const c = conteos[s.id] ?? { total: 0, activas: 0 }
           return (
@@ -172,6 +173,7 @@ export default function Sistemas() {
             </div>
           )
         })}
+        </div>
       </div>
     </div>
   )

@@ -67,7 +67,7 @@ export default function Inicio() {
         </div>
       </div>
 
-      <div className="px-4 py-4 grid grid-cols-2 gap-3">
+      <div className="px-4 py-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatColor icon={AlertCircle}   accent="bg-red-500"     bgLight="bg-red-50"     textLabel="text-red-700"     label="Abiertos"          value={stats.abiertos} />
         <StatColor icon={Clock}         accent="bg-amber-500"   bgLight="bg-amber-50"   textLabel="text-amber-700"   label="En proceso"        value={stats.en_proceso} />
         <StatColor icon={Ticket}        accent="bg-blue-500"    bgLight="bg-blue-50"    textLabel="text-blue-700"    label="Esperando cliente" value={stats.esperando} />
@@ -82,7 +82,7 @@ export default function Inicio() {
             No tenés tickets asignados.
           </div>
         )}
-        <div className="space-y-2">
+        <div className="space-y-2 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2 lg:space-y-0">
           {mios.map(t => {
             const prio = PRIO_CONFIG[t.prioridad] ?? PRIO_CONFIG.media
             return (

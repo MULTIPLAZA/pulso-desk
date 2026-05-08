@@ -97,6 +97,7 @@ export default function Usuarios() {
 
         {loading && <p className="text-center text-gray-500 py-6">Cargando...</p>}
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {!loading && lista.map(u => {
           const r = rolCfg(u.rol)
           const Icono = r.icon
@@ -171,6 +172,7 @@ export default function Usuarios() {
             </div>
           )
         })}
+        </div>
       </div>
 
       {modal === 'nuevo' && (
