@@ -1,11 +1,9 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Building2, Ticket, Lightbulb, ClipboardList, BarChart3, MoreHorizontal, PlusCircle } from 'lucide-react'
+import { LayoutDashboard, Building2, Ticket, BarChart3, MoreHorizontal, PlusCircle } from 'lucide-react'
 
 const mainItems = [
   { to: '/',            icon: LayoutDashboard, label: 'Inicio'      },
   { to: '/tickets',     icon: Ticket,          label: 'Tickets'     },
-  { to: '/solicitudes', icon: Lightbulb,       label: 'Solicitudes' },
-  { to: '/ordenes',     icon: ClipboardList,   label: 'Órdenes'     },
   { to: '/clientes',    icon: Building2,       label: 'Clientes'    },
 ]
 

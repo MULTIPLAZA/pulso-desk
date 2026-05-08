@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth, puedeCrearTickets } from '../lib/auth'
 import { Search, PlusCircle, Ticket as TicketIcon, Ticket } from 'lucide-react'
 import { format } from 'date-fns'
+import TabsTickets from '../components/TabsTickets'
 
 const ESTADO_FILTROS = [
   { value: 'abiertos',          label: 'Abiertos'           },
@@ -79,6 +80,8 @@ export default function Tickets() {
           )}
         </div>
       </div>
+
+      <TabsTickets />
 
       <div className="bg-white dark:bg-gray-800 px-4 pt-3 pb-3 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10">
         <div className="relative mb-3">

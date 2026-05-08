@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Search, PlusCircle, Lightbulb } from 'lucide-react'
 import { format } from 'date-fns'
+import TabsTickets from '../components/TabsTickets'
 
 const ESTADO_CFG = {
   pendiente:    { bg: 'bg-gray-100',   text: 'text-gray-700',    label: '⏳ Pendiente'   },
@@ -77,6 +78,8 @@ export default function Solicitudes() {
           </button>
         </div>
       </div>
+
+      <TabsTickets />
 
       <div className="bg-white dark:bg-gray-800 px-4 pt-3 pb-3 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10">
         <div className="relative mb-3">

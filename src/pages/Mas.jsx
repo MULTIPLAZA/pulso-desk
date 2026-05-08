@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useTheme } from '../lib/theme'
-import { LogOut, Moon, Sun, BarChart3, Lightbulb, PlusCircle, ChevronRight, Server, Users } from 'lucide-react'
+import { LogOut, Moon, Sun, BarChart3, PlusCircle, ChevronRight, Server, Users } from 'lucide-react'
 
 const ROL_LABEL = {
   admin:         'Administrador',
@@ -27,7 +27,6 @@ export default function Mas() {
 
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
           <LinkRow to="/dashboard"       icon={BarChart3}  label="Dashboard" />
-          <LinkRow to="/solicitudes"     icon={Lightbulb}  label="Solicitudes" />
           <LinkRow to="/sistemas"        icon={Server}     label="Sistemas" />
           {perfil.rol === 'admin' && (
             <LinkRow to="/usuarios"      icon={Users}      label="Usuarios del equipo" />
