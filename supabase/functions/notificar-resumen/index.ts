@@ -1,9 +1,7 @@
 // Edge Function: notificar-resumen
-// Dos modos de invocación:
-//   1. Cron (Supabase pg_cron, lunes y viernes 9 AM PY) — Authorization: Bearer <CRON_SECRET>
-//      → envía a todos los ADMINS activos.
+// Dos modos de invocación (ambos envían a TODOS los usuarios activos con email):
+//   1. Cron (Supabase pg_cron, lunes y jueves 8 AM PY) — Authorization: Bearer <CRON_SECRET>
 //   2. Manual desde la app — Authorization: Bearer <JWT de cualquier usuario activo>
-//      → envía a TODOS los usuarios activos.
 //
 // Destinatario = pd_usuarios_perfil.email_resumen (configurable por cada
 // usuario desde la pantalla Más). Usuarios sin email_resumen se omiten.
@@ -70,16 +68,13 @@ Deno.serve(async (req) => {
     return json({ error: 'unauthorized' }, 401)
   }
 
-  // 1. Destinatarios — usuarios activos con email_resumen configurado
-  //    - cron   → solo admins
-  //    - manual → todos los usuarios activos
-  const q = supabase
+  // 1. Destinatarios — todos los usuarios activos con email_resumen configurado
+  //    (mismo alcance para cron y manual)
+  const { data: destinatarios } = await supabase
     .from('pd_usuarios_perfil')
     .select('id, nombre, email_resumen')
     .eq('activo', true)
     .not('email_resumen', 'is', null)
-  if (modo === 'cron') q.eq('rol', 'admin')
-  const { data: destinatarios } = await q
 
   const emails = Array.from(new Set(
     (destinatarios ?? [])
@@ -88,10 +83,7 @@ Deno.serve(async (req) => {
   ))
 
   if (emails.length === 0) {
-    return json({
-      skipped: `sin ${modo === 'cron' ? 'admins' : 'usuarios'} con email_resumen configurado`,
-      modo,
-    })
+    return json({ skipped: 'sin usuarios con email_resumen configurado', modo })
   }
 
   // 2. Datos del resumen
