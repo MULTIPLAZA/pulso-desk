@@ -20,21 +20,38 @@ export default function Mas() {
   const [enviando, setEnviando] = useState(false)
   const [aviso, setAviso]       = useState(null) // { tipo: 'ok'|'err', msg }
 
-  const [usuarios, setUsuarios] = useState(null) // null = cargando
-  const [drafts, setDrafts]     = useState({})   // { id: 'email...' }
-  const [savingId, setSavingId] = useState(null)
-  const [savedId,  setSavedId]  = useState(null)
-  const [rowError, setRowError] = useState({})   // { id: 'msg' }
+  const [usuarios, setUsuarios]       = useState(null) // null = cargando
+  const [loadError, setLoadError]     = useState(null)
+  const [drafts, setDrafts]           = useState({})   // { id: 'email...' }
+  const [savingId, setSavingId]       = useState(null)
+  const [savedId,  setSavedId]        = useState(null)
+  const [rowError, setRowError]       = useState({})   // { id: 'msg' }
 
   useEffect(() => { cargarUsuarios() }, [])
 
   async function cargarUsuarios() {
-    const { data, error } = await supabase
+    setLoadError(null)
+    // Intentamos primero con email_resumen. Si la columna no existe (migración 2.7
+    // no aplicada todavía), reintentamos sin ella para que la lista igual se vea.
+    let { data, error } = await supabase
       .from('pd_usuarios_perfil')
       .select('id, nombre, rol, activo, email_resumen')
       .eq('activo', true)
       .order('nombre')
+
+    if (error && /email_resumen/i.test(error.message)) {
+      setLoadError('Falta correr la migración 2.7 (email_resumen). La lista se muestra sin la columna; los emails no se pueden guardar todavía.')
+      const r = await supabase
+        .from('pd_usuarios_perfil')
+        .select('id, nombre, rol, activo')
+        .eq('activo', true)
+        .order('nombre')
+      data  = r.data
+      error = r.error
+    }
+
     if (error) {
+      setLoadError(error.message)
       setUsuarios([])
       return
     }
@@ -150,38 +167,39 @@ export default function Mas() {
             </p>
           </div>
 
-          {perfil.rol === 'admin' && (
-            <div className="border-b border-gray-100 dark:border-gray-700">
-              <button
-                onClick={enviarReporte}
-                disabled={enviando}
-                className="w-full flex items-center gap-3 p-4 text-left active:bg-gray-50 disabled:opacity-60"
-              >
-                {enviando
-                  ? <Loader2 size={18} className="text-emerald-600 animate-spin" />
-                  : <Mail size={18} className="text-emerald-600" />}
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {enviando ? 'Enviando…' : 'Enviar ahora a todos los usuarios'}
-                  </p>
-                  <p className="text-xs text-gray-500">Manda el resumen actual a todos los emails configurados</p>
-                </div>
-                <ChevronRight size={16} className="text-gray-300" />
-              </button>
-              {aviso && (
-                <div className={`px-4 pb-3 text-xs ${aviso.tipo === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {aviso.msg}
-                </div>
-              )}
-            </div>
-          )}
+          <div className="border-b border-gray-100 dark:border-gray-700">
+            <button
+              onClick={enviarReporte}
+              disabled={enviando}
+              className="w-full flex items-center gap-3 p-4 text-left active:bg-gray-50 disabled:opacity-60"
+            >
+              {enviando
+                ? <Loader2 size={18} className="text-emerald-600 animate-spin" />
+                : <Mail size={18} className="text-emerald-600" />}
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {enviando ? 'Enviando…' : 'Enviar ahora a todos los usuarios'}
+                </p>
+                <p className="text-xs text-gray-500">Manda el resumen actual a todos los emails configurados</p>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            {aviso && (
+              <div className={`px-4 pb-3 text-xs ${aviso.tipo === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
+                {aviso.msg}
+              </div>
+            )}
+          </div>
 
           <div className="p-4">
             <p className="text-xs font-medium text-gray-500 mb-2">Correos para resumen</p>
+            {loadError && (
+              <p className="text-xs text-red-600 mb-2">{loadError}</p>
+            )}
             {usuarios === null && (
               <p className="text-sm text-gray-500">Cargando usuarios…</p>
             )}
-            {usuarios && usuarios.length === 0 && (
+            {usuarios && usuarios.length === 0 && !loadError && (
               <p className="text-sm text-gray-500">No hay usuarios activos.</p>
             )}
             <div className="space-y-3">

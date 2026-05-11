@@ -2,7 +2,7 @@
 // Dos modos de invocación:
 //   1. Cron (Supabase pg_cron, lunes y viernes 9 AM PY) — Authorization: Bearer <CRON_SECRET>
 //      → envía a todos los ADMINS activos.
-//   2. Manual desde la app — Authorization: Bearer <JWT del admin>
+//   2. Manual desde la app — Authorization: Bearer <JWT de cualquier usuario activo>
 //      → envía a TODOS los usuarios activos.
 //
 // Destinatario = pd_usuarios_perfil.email_resumen (configurable por cada
@@ -53,9 +53,6 @@ Deno.serve(async (req) => {
       .maybeSingle()
     if (!perfil)             return json({ error: 'perfil_no_existe' }, 403)
     if (!perfil.activo)      return json({ error: 'perfil_inactivo'  }, 403)
-    if (perfil.rol !== 'admin') {
-      return json({ error: 'forbidden_not_admin', detail: `Tu rol es "${perfil.rol}", solo admin puede disparar el reporte` }, 403)
-    }
     modo = 'manual'
   } else {
     return json({ error: 'unauthorized' }, 401)
