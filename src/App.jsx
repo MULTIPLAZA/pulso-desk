@@ -16,9 +16,6 @@ const ClienteDetalle    = lazy(() => import('./pages/ClienteDetalle'))
 const Tickets           = lazy(() => import('./pages/Tickets'))
 const NuevoTicket       = lazy(() => import('./pages/NuevoTicket'))
 const TicketDetalle     = lazy(() => import('./pages/TicketDetalle'))
-const Solicitudes       = lazy(() => import('./pages/Solicitudes'))
-const NuevaSolicitud    = lazy(() => import('./pages/NuevaSolicitud'))
-const SolicitudDetalle  = lazy(() => import('./pages/SolicitudDetalle'))
 const Dashboard         = lazy(() => import('./pages/Dashboard'))
 const Sistemas          = lazy(() => import('./pages/Sistemas'))
 const SistemaDetalle    = lazy(() => import('./pages/SistemaDetalle'))
@@ -65,9 +62,9 @@ function AppShell() {
               <Route path="/tickets"             element={<Tickets />} />
               <Route path="/tickets/nuevo"       element={<NuevoTicket />} />
               <Route path="/tickets/:id"         element={<TicketDetalle />} />
-              <Route path="/solicitudes"         element={<Solicitudes />} />
-              <Route path="/solicitudes/nueva"   element={<NuevaSolicitud />} />
-              <Route path="/solicitudes/:id"     element={<SolicitudDetalle />} />
+              <Route path="/solicitudes"         element={<Navigate to="/tickets" replace />} />
+              <Route path="/solicitudes/nueva"   element={<Navigate to="/tickets/nuevo" replace />} />
+              <Route path="/solicitudes/:id"     element={<Navigate to="/tickets" replace />} />
               <Route path="/sistemas"            element={<Sistemas />} />
               <Route path="/sistemas/:id"        element={<SistemaDetalle />} />
               <Route path="/usuarios"            element={<Usuarios />} />

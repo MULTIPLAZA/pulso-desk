@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { ArrowLeft, Save, Lightbulb, Ticket } from 'lucide-react'
-
-const IMPACTO_A_PRIORIDAD = { alto: 'alta', medio: 'media', bajo: 'baja' }
+import { ArrowLeft, Save, Ticket } from 'lucide-react'
 
 function fechaEnUnaSemana() {
   const d = new Date()
@@ -17,13 +15,12 @@ export default function NuevaOrden() {
   const [sp]        = useSearchParams()
   const { perfil }  = useAuth()
   const ticketId    = sp.get('ticket')
-  const solicitudId = sp.get('solicitud')
   const sistemaPre  = sp.get('sistema')
 
   const [usuarios, setUsuarios] = useState([])
   const [sistemas, setSistemas] = useState([])
-  const [origen, setOrigen]     = useState(null) // { tipo, numero, titulo }
-  const [cargandoOrigen, setCargandoOrigen] = useState(!!(ticketId || solicitudId))
+  const [origen, setOrigen]     = useState(null) // { numero, titulo }
+  const [cargandoOrigen, setCargandoOrigen] = useState(!!ticketId)
   const [form, setForm] = useState({
     titulo:              '',
     funcionalidad:       '',
@@ -43,39 +40,23 @@ export default function NuevaOrden() {
     supabase.from('pd_sistemas').select('id, nombre').eq('activo', true).order('nombre').then(({ data }) => setSistemas(data ?? []))
   }, [])
 
-  // Hereda datos del origen (ticket o solicitud) si viene del query param
+  // Hereda datos del ticket origen si viene del query param
   useEffect(() => {
     async function heredar() {
-      if (solicitudId) {
+      if (ticketId) {
         const { data } = await supabase
-          .from('pd_solicitudes')
-          .select('numero, titulo, descripcion, sistema_id, impacto')
-          .eq('id', solicitudId)
+          .from('pd_tickets')
+          .select('numero, titulo, descripcion, prioridad, sistema_id')
+          .eq('id', ticketId)
           .maybeSingle()
         if (data) {
-          setOrigen({ tipo: 'solicitud', numero: data.numero, titulo: data.titulo })
+          setOrigen({ numero: data.numero, titulo: data.titulo })
           setForm(f => ({
             ...f,
             titulo:              data.titulo ?? f.titulo,
             funcionalidad:       data.titulo ?? f.funcionalidad,
             descripcion_tecnica: data.descripcion ?? f.descripcion_tecnica,
             sistema_id:          data.sistema_id ?? f.sistema_id,
-            prioridad:           IMPACTO_A_PRIORIDAD[data.impacto] ?? f.prioridad,
-          }))
-        }
-      } else if (ticketId) {
-        const { data } = await supabase
-          .from('pd_tickets')
-          .select('numero, titulo, descripcion, prioridad')
-          .eq('id', ticketId)
-          .maybeSingle()
-        if (data) {
-          setOrigen({ tipo: 'ticket', numero: data.numero, titulo: data.titulo })
-          setForm(f => ({
-            ...f,
-            titulo:              data.titulo ?? f.titulo,
-            funcionalidad:       data.titulo ?? f.funcionalidad,
-            descripcion_tecnica: data.descripcion ?? f.descripcion_tecnica,
             prioridad:           data.prioridad ?? f.prioridad,
           }))
         }
@@ -83,7 +64,7 @@ export default function NuevaOrden() {
       setCargandoOrigen(false)
     }
     heredar()
-  }, [ticketId, solicitudId])
+  }, [ticketId])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -102,9 +83,6 @@ export default function NuevaOrden() {
 
     if (ticketId) {
       await supabase.from('pd_orden_ticket').insert({ orden_id: orden.id, ticket_id: ticketId })
-    }
-    if (solicitudId) {
-      await supabase.from('pd_orden_solicitud').insert({ orden_id: orden.id, solicitud_id: solicitudId })
     }
     navigate(`/ordenes/${orden.id}`, { replace: true })
   }
@@ -125,11 +103,11 @@ export default function NuevaOrden() {
 
         {origen && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-md p-3 text-xs text-emerald-800 flex items-start gap-2">
-            {origen.tipo === 'solicitud' ? <Lightbulb size={14} className="mt-0.5 flex-shrink-0" /> : <Ticket size={14} className="mt-0.5 flex-shrink-0" />}
+            <Ticket size={14} className="mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-semibold">Heredado de {origen.tipo} #{origen.numero}</p>
+              <p className="font-semibold">Heredado del ticket #{origen.numero}</p>
               <p>{origen.titulo}</p>
-              <p className="mt-1 text-emerald-700">Podés ajustar los campos antes de crear la orden. Los datos fueron pre-cargados desde la {origen.tipo}.</p>
+              <p className="mt-1 text-emerald-700">Podés ajustar los campos antes de crear la orden. Los datos fueron pre-cargados desde el ticket.</p>
             </div>
           </div>
         )}

@@ -19,17 +19,17 @@ export default function Sistemas() {
   useEffect(() => { cargar() }, [])
 
   async function cargar() {
-    const [{ data: sis }, { data: sols }] = await Promise.all([
+    const [{ data: sis }, { data: tks }] = await Promise.all([
       supabase.from('pd_sistemas').select('*').order('nombre'),
-      supabase.from('pd_solicitudes').select('sistema_id, estado'),
+      supabase.from('pd_tickets').select('sistema_id, estado'),
     ])
     setLista(sis ?? [])
     const cuentas = {}
-    ;(sols ?? []).forEach(s => {
-      if (!s.sistema_id) return
-      cuentas[s.sistema_id] = cuentas[s.sistema_id] || { total: 0, activas: 0 }
-      cuentas[s.sistema_id].total += 1
-      if (s.estado === 'pendiente' || s.estado === 'en_analisis') cuentas[s.sistema_id].activas += 1
+    ;(tks ?? []).forEach(t => {
+      if (!t.sistema_id) return
+      cuentas[t.sistema_id] = cuentas[t.sistema_id] || { total: 0, activas: 0 }
+      cuentas[t.sistema_id].total += 1
+      if (t.estado !== 'cerrado') cuentas[t.sistema_id].activas += 1
     })
     setConteos(cuentas)
     setLoading(false)
@@ -63,7 +63,7 @@ export default function Sistemas() {
 
   async function borrar(s) {
     const c = conteos[s.id]
-    const warn = c ? `\n\nTiene ${c.total} solicitud${c.total !== 1 ? 'es' : ''} asociada${c.total !== 1 ? 's' : ''} (quedarán sin sistema).` : ''
+    const warn = c ? `\n\nTiene ${c.total} ticket${c.total !== 1 ? 's' : ''} asociado${c.total !== 1 ? 's' : ''} (quedarán sin sistema).` : ''
     if (!confirm(`¿Eliminar "${s.nombre}"?${warn}`)) return
     await supabase.from('pd_sistemas').delete().eq('id', s.id)
     cargar()
@@ -125,7 +125,7 @@ export default function Sistemas() {
             </Campo>
             <label className="flex items-center gap-2 text-sm text-gray-700">
               <input type="checkbox" checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} />
-              Activo (visible al crear solicitudes)
+              Activo (visible al crear tickets)
             </label>
             {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-md">{error}</p>}
             <div className="flex gap-2">
@@ -158,7 +158,7 @@ export default function Sistemas() {
                   </div>
                   {s.descripcion && <p className="text-xs text-gray-500 truncate">{s.descripcion}</p>}
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {c.total} solicitud{c.total !== 1 ? 'es' : ''} {c.activas > 0 && <span className="text-emerald-600">· {c.activas} activas</span>}
+                    {c.total} ticket{c.total !== 1 ? 's' : ''} {c.activas > 0 && <span className="text-emerald-600">· {c.activas} activos</span>}
                   </p>
                 </button>
                 {esAdmin ? (

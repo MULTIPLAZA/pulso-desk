@@ -8,3 +8,4 @@ dist-ssr
 .vscode
 .idea
 *.log
+supabase/migration-fase2.8-solicitudes-a-tickets.sql

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AlertCircle, Clock, CheckCircle2, Ticket as TicketIcon, TrendingUp, Building2, Tag, BarChart3 } from 'lucide-react'
 
+const TIPO_LABEL = { soporte_tecnico: 'Soporte', incidente: 'Incidente', consulta: 'Consulta' }
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const [data, setData]       = useState(null)
@@ -15,18 +17,15 @@ export default function Dashboard() {
 
     const [
       { data: tickets },
-      { data: solicitudes },
       { data: etq },
       { data: relEtq },
     ] = await Promise.all([
-      supabase.from('pd_tickets').select('id, estado, prioridad, cliente_id, created_at, cerrado_at, pd_clientes(razon_social)'),
-      supabase.from('pd_solicitudes').select('id, estado, frecuencia, titulo, created_at'),
+      supabase.from('pd_tickets').select('id, titulo, tipo, estado, prioridad, cliente_id, frecuencia, created_at, cerrado_at, pd_clientes(razon_social)'),
       supabase.from('pd_etiquetas').select('id, nombre, color'),
       supabase.from('pd_ticket_etiquetas').select('etiqueta_id, ticket_id'),
     ])
 
     const tks = tickets ?? []
-    const sols = solicitudes ?? []
 
     // Tiempo promedio de cierre (en horas)
     const cerrados = tks.filter(t => t.cerrado_at && t.created_at)
@@ -56,10 +55,10 @@ export default function Dashboard() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 8)
 
-    // Top solicitudes pendientes (por frecuencia)
-    const topSolic = sols
-      .filter(s => s.estado === 'pendiente' || s.estado === 'en_analisis')
-      .sort((a, b) => b.frecuencia - a.frecuencia)
+    // Top consultas pendientes con más demanda (frecuencia)
+    const topConsultas = tks
+      .filter(t => t.tipo === 'consulta' && t.estado !== 'cerrado')
+      .sort((a, b) => (b.frecuencia ?? 1) - (a.frecuencia ?? 1))
       .slice(0, 5)
 
     setData({
@@ -72,14 +71,14 @@ export default function Dashboard() {
         ult30:           ult30.length,
         promedioHoras,
       },
-      solicitudes: {
-        pendientes:      sols.filter(s => s.estado === 'pendiente').length,
-        en_analisis:     sols.filter(s => s.estado === 'en_analisis').length,
-        aprobadas:       sols.filter(s => s.estado === 'aprobado').length,
+      porTipo: {
+        soporte:   tks.filter(t => t.tipo === 'soporte_tecnico').length,
+        incidente: tks.filter(t => t.tipo === 'incidente').length,
+        consulta:  tks.filter(t => t.tipo === 'consulta').length,
       },
       topClientes,
       topEtiquetas,
-      topSolic,
+      topConsultas,
     })
     setLoading(false)
   }
@@ -119,13 +118,13 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Solicitudes */}
+        {/* Distribución por tipo */}
         <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
-          <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3">Solicitudes</p>
+          <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3">Por tipo</p>
           <div className="space-y-2 text-sm">
-            <Row label="Pendientes"  value={data.solicitudes.pendientes}  color="text-gray-600" />
-            <Row label="En análisis" value={data.solicitudes.en_analisis} color="text-blue-600" />
-            <Row label="Aprobadas"   value={data.solicitudes.aprobadas}   color="text-emerald-600" />
+            <Row label="Soporte"   value={data.porTipo.soporte}   color="text-emerald-600" />
+            <Row label="Incidente" value={data.porTipo.incidente} color="text-red-600" />
+            <Row label="Consulta"  value={data.porTipo.consulta}  color="text-amber-600" />
           </div>
         </section>
 
@@ -162,17 +161,17 @@ export default function Dashboard() {
           )}
         </section>
 
-        {/* Solicitudes top */}
+        {/* Top consultas con más demanda */}
         <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
-          <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3">Top solicitudes pendientes</p>
-          {data.topSolic.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-3">Sin solicitudes activas.</p>
+          <p className="font-semibold text-sm text-gray-900 dark:text-white mb-3">Top consultas pendientes</p>
+          {data.topConsultas.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-3">Sin consultas activas.</p>
           ) : (
             <div className="space-y-2">
-              {data.topSolic.map(s => (
-                <button key={s.id} onClick={() => navigate(`/solicitudes/${s.id}`)} className="w-full flex items-center justify-between text-left border border-gray-100 rounded-md p-2.5 active:bg-gray-50">
+              {data.topConsultas.map(s => (
+                <button key={s.id} onClick={() => navigate(`/tickets/${s.id}`)} className="w-full flex items-center justify-between text-left border border-gray-100 rounded-md p-2.5 active:bg-gray-50">
                   <span className="text-sm text-gray-900 dark:text-white truncate">{s.titulo}</span>
-                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-medium flex-shrink-0 ml-2">× {s.frecuencia}</span>
+                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-medium flex-shrink-0 ml-2">× {s.frecuencia ?? 1}</span>
                 </button>
               ))}
             </div>

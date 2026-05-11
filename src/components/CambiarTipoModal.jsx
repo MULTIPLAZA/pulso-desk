@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Ticket, Lightbulb, ClipboardList, AlertTriangle, ArrowRightLeft } from 'lucide-react'
+import { X, Ticket, ClipboardList, AlertTriangle, ArrowRightLeft } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { convertir, PERDIDAS, TRANSFORMACIONES, RUTAS, LABELS } from '../lib/convertir'
 
 const TIPOS = {
-  ticket:    { icon: Ticket,         color: 'bg-red-600',     accent: 'border-red-500'    },
-  solicitud: { icon: Lightbulb,      color: 'bg-amber-500',   accent: 'border-amber-500'  },
-  orden:     { icon: ClipboardList,  color: 'bg-indigo-600',  accent: 'border-indigo-500' },
+  ticket: { icon: Ticket,        color: 'bg-red-600',    accent: 'border-red-500'    },
+  orden:  { icon: ClipboardList, color: 'bg-indigo-600', accent: 'border-indigo-500' },
 }
 
 export default function CambiarTipoModal({ tipoActual, registro, onClose }) {
@@ -17,7 +16,7 @@ export default function CambiarTipoModal({ tipoActual, registro, onClose }) {
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState(null)
 
-  const opciones = Object.keys(TIPOS).filter(t => t !== tipoActual && t !== 'orden')
+  const opciones = Object.keys(TIPOS).filter(t => t !== tipoActual)
 
   async function ejecutar() {
     if (!destino) return

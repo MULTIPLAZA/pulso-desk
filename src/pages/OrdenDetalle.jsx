@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { ArrowLeft, Trash2, Ticket, Lightbulb, Plus, X, Send, MessageSquare, Calendar, AlertTriangle, ArrowRightLeft } from 'lucide-react'
+import { ArrowLeft, Trash2, Ticket, Plus, X, Send, MessageSquare, Calendar, AlertTriangle, ArrowRightLeft } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { diasDesde, diasTexto, colorDias } from '../lib/ordenes'
@@ -33,7 +33,6 @@ export default function OrdenDetalle() {
   const { perfil } = useAuth()
   const [orden, setOrden]         = useState(null)
   const [tickets, setTickets]     = useState([])
-  const [solicitudes, setSolic]   = useState([])
   const [usuarios, setUsuarios]   = useState([])
   const [sistemas, setSistemas]   = useState([])
   const [notas, setNotas]         = useState([])
@@ -50,10 +49,9 @@ export default function OrdenDetalle() {
 
   async function cargar() {
     setLoading(true)
-    const [{ data: o }, { data: tks }, { data: sls }, { data: us }, { data: ns }, { data: sis }] = await Promise.all([
+    const [{ data: o }, { data: tks }, { data: us }, { data: ns }, { data: sis }] = await Promise.all([
       supabase.from('pd_ordenes').select('*, pd_sistemas(id, nombre, color)').eq('id', id).single(),
       supabase.from('pd_orden_ticket').select('pd_tickets(id, numero, titulo, estado)').eq('orden_id', id),
-      supabase.from('pd_orden_solicitud').select('pd_solicitudes(id, numero, titulo, estado)').eq('orden_id', id),
       supabase.from('pd_usuarios_perfil').select('id, nombre, rol').eq('activo', true),
       supabase.from('pd_orden_notas').select('*').eq('orden_id', id).order('created_at', { ascending: false }),
       supabase.from('pd_sistemas').select('id, nombre').eq('activo', true).order('nombre'),
@@ -61,7 +59,6 @@ export default function OrdenDetalle() {
     setOrden(o)
     setSistemas(sis ?? [])
     setTickets((tks ?? []).map(x => x.pd_tickets).filter(Boolean))
-    setSolic((sls ?? []).map(x => x.pd_solicitudes).filter(Boolean))
     setUsuarios(us ?? [])
     setNotas(ns ?? [])
     setNotasAutor(Object.fromEntries((us ?? []).map(u => [u.id, u.nombre])))
@@ -96,27 +93,22 @@ export default function OrdenDetalle() {
     cargar()
   }
 
-  async function abrirVincular(tipo) {
-    setVincSheet(tipo)
+  async function abrirVincular() {
+    setVincSheet('ticket')
     setFiltroDisp('')
-    const tabla = tipo === 'ticket' ? 'pd_tickets' : 'pd_solicitudes'
-    const { data } = await supabase.from(tabla).select('id, numero, titulo, estado').order('created_at', { ascending: false }).limit(50)
-    const ya = tipo === 'ticket' ? tickets.map(x => x.id) : solicitudes.map(x => x.id)
+    const { data } = await supabase.from('pd_tickets').select('id, numero, titulo, estado').order('created_at', { ascending: false }).limit(50)
+    const ya = tickets.map(x => x.id)
     setDisp((data ?? []).filter(x => !ya.includes(x.id)))
   }
 
   async function vincular(item) {
-    const tabla = vincSheet === 'ticket' ? 'pd_orden_ticket' : 'pd_orden_solicitud'
-    const col   = vincSheet === 'ticket' ? 'ticket_id'      : 'solicitud_id'
-    await supabase.from(tabla).insert({ orden_id: id, [col]: item.id })
+    await supabase.from('pd_orden_ticket').insert({ orden_id: id, ticket_id: item.id })
     setVincSheet(null)
     cargar()
   }
 
-  async function desvincular(tipo, itemId) {
-    const tabla = tipo === 'ticket' ? 'pd_orden_ticket' : 'pd_orden_solicitud'
-    const col   = tipo === 'ticket' ? 'ticket_id'      : 'solicitud_id'
-    await supabase.from(tabla).delete().eq('orden_id', id).eq(col, itemId)
+  async function desvincular(itemId) {
+    await supabase.from('pd_orden_ticket').delete().eq('orden_id', id).eq('ticket_id', itemId)
     cargar()
   }
 
@@ -281,13 +273,8 @@ export default function OrdenDetalle() {
 
         <Vinculados
           titulo="Tickets relacionados" icon={Ticket} items={tickets} tipo="ticket"
-          puedeEditar={puedeEditar} onAgregar={() => abrirVincular('ticket')} onQuitar={itemId => desvincular('ticket', itemId)}
+          puedeEditar={puedeEditar} onAgregar={abrirVincular} onQuitar={desvincular}
           linkBase="/tickets"
-        />
-        <Vinculados
-          titulo="Solicitudes relacionadas" icon={Lightbulb} items={solicitudes} tipo="solicitud"
-          puedeEditar={puedeEditar} onAgregar={() => abrirVincular('solicitud')} onQuitar={itemId => desvincular('solicitud', itemId)}
-          linkBase="/solicitudes"
         />
 
         <p className="text-xs text-gray-400 text-center">

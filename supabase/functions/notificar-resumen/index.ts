@@ -89,9 +89,8 @@ Deno.serve(async (req) => {
   // 2. Datos del resumen
   const desde7d = new Date(Date.now() - 7 * 86400000).toISOString()
 
-  const [tk, sl, viejos] = await Promise.all([
-    supabase.from('pd_tickets').select('id, estado, cerrado_at'),
-    supabase.from('pd_solicitudes').select('id, estado'),
+  const [tk, viejos] = await Promise.all([
+    supabase.from('pd_tickets').select('id, tipo, estado, cerrado_at'),
     supabase.from('pd_tickets')
       .select('numero, titulo, prioridad, created_at, pd_clientes(razon_social)')
       .neq('estado', 'cerrado')
@@ -99,18 +98,17 @@ Deno.serve(async (req) => {
       .limit(5),
   ])
 
-  const tickets     = tk.data     ?? []
-  const solicitudes = sl.data     ?? []
-  const masViejos   = viejos.data ?? []
+  const tickets   = tk.data     ?? []
+  const masViejos = viejos.data ?? []
 
   const stats = {
     abiertos:       tickets.filter(t => t.estado === 'abierto').length,
     en_proceso:     tickets.filter(t => t.estado === 'en_proceso').length,
     esperando:      tickets.filter(t => t.estado === 'esperando_cliente').length,
     cerradosSemana: tickets.filter(t => t.cerrado_at && t.cerrado_at >= desde7d).length,
-    solPendientes:  solicitudes.filter(s => s.estado === 'pendiente').length,
-    solEnAnalisis:  solicitudes.filter(s => s.estado === 'en_analisis').length,
-    solAprobadas:   solicitudes.filter(s => s.estado === 'aprobado').length,
+    soporte:        tickets.filter(t => t.tipo === 'soporte_tecnico' && t.estado !== 'cerrado').length,
+    incidente:      tickets.filter(t => t.tipo === 'incidente'        && t.estado !== 'cerrado').length,
+    consulta:       tickets.filter(t => t.tipo === 'consulta'         && t.estado !== 'cerrado').length,
   }
 
   // 3. HTML
@@ -133,7 +131,7 @@ Deno.serve(async (req) => {
     <h2 style="color:#059669;margin:0 0 4px 0">Pulso Desk · Resumen</h2>
     <p style="color:#6b7280;font-size:13px;margin:0 0 20px 0;text-transform:capitalize">${fechaPY}</p>
 
-    <h3 style="color:#dc2626;font-size:15px;margin-bottom:8px">🎫 Tickets</h3>
+    <h3 style="color:#dc2626;font-size:15px;margin-bottom:8px">🎫 Tickets por estado</h3>
     <table cellpadding="6" style="border-collapse:collapse;font-size:14px;width:100%">
       <tr style="background:#fef2f2"><td>🔴 Abiertos</td><td align="right"><b>${stats.abiertos}</b></td></tr>
       <tr><td>🟡 En proceso</td><td align="right"><b>${stats.en_proceso}</b></td></tr>
@@ -141,11 +139,11 @@ Deno.serve(async (req) => {
       <tr><td>✅ Cerrados últimos 7 días</td><td align="right"><b>${stats.cerradosSemana}</b></td></tr>
     </table>
 
-    <h3 style="color:#f59e0b;font-size:15px;margin-top:20px;margin-bottom:8px">💡 Solicitudes</h3>
+    <h3 style="color:#0891b2;font-size:15px;margin-top:20px;margin-bottom:8px">🗂 Tickets activos por tipo</h3>
     <table cellpadding="6" style="border-collapse:collapse;font-size:14px;width:100%">
-      <tr style="background:#fafafa"><td>⏳ Pendientes</td><td align="right"><b>${stats.solPendientes}</b></td></tr>
-      <tr><td>🔵 En análisis</td><td align="right"><b>${stats.solEnAnalisis}</b></td></tr>
-      <tr style="background:#ecfdf5"><td>✅ Aprobadas</td><td align="right"><b>${stats.solAprobadas}</b></td></tr>
+      <tr style="background:#ecfdf5"><td>🛠 Soporte</td><td align="right"><b>${stats.soporte}</b></td></tr>
+      <tr><td>⚠️ Incidente</td><td align="right"><b>${stats.incidente}</b></td></tr>
+      <tr style="background:#fef3c7"><td>💡 Consulta</td><td align="right"><b>${stats.consulta}</b></td></tr>
     </table>
 
     ${masViejos.length > 0 ? `

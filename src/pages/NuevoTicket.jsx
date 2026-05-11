@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { ArrowLeft, Save, Ticket, Lightbulb, Paperclip, Plus, X, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Save, Paperclip, Plus, X, ExternalLink } from 'lucide-react'
 import { detectarAdjunto, validarUrl, insertarAdjuntos } from '../lib/adjuntos'
 
 export default function NuevoTicket() {
@@ -10,9 +10,8 @@ export default function NuevoTicket() {
   const [sp]        = useSearchParams()
   const { perfil }  = useAuth()
   const clienteInicial = sp.get('cliente') ?? ''
-  const tipoInicial    = sp.get('tipo') === 'solicitud' ? 'solicitud' : 'ticket'
-
-  const [tipoForm, setTipoForm] = useState(tipoInicial)
+  // Compatibilidad con links viejos `?tipo=solicitud` → arranca como consulta
+  const tipoInicial = sp.get('tipo') === 'solicitud' ? 'consulta' : 'consulta'
 
   const [clientes, setClientes]     = useState([])
   const [contactos, setContactos]   = useState([])
@@ -20,7 +19,7 @@ export default function NuevoTicket() {
   const [sistemas, setSistemas]     = useState([])
   const [guardando, setGuardando]   = useState(false)
   const [error, setError]           = useState('')
-  const [adjuntos, setAdjuntos]     = useState([])    // staging local: [{ url, descripcion }]
+  const [adjuntos, setAdjuntos]     = useState([])
   const [adjUrl, setAdjUrl]         = useState('')
   const [adjDesc, setAdjDesc]       = useState('')
   const [adjError, setAdjError]     = useState('')
@@ -29,12 +28,11 @@ export default function NuevoTicket() {
     descripcion:   '',
     cliente_id:    clienteInicial,
     contacto_id:   '',
-    tipo:          'consulta',
+    tipo:          tipoInicial,
     estado:        'abierto',
     prioridad:     'media',
     asignado_a:    '',
     sistema_id:    '',
-    impacto:       'medio',
     frecuencia:    1,
   })
 
@@ -55,39 +53,24 @@ export default function NuevoTicket() {
     if (!form.titulo.trim()) { setError('Título requerido'); return }
     setGuardando(true)
 
-    if (tipoForm === 'ticket') {
-      const payload = {
-        titulo:      form.titulo,
-        descripcion: form.descripcion,
-        cliente_id:  form.cliente_id  || null,
-        contacto_id: form.contacto_id || null,
-        tipo:        form.tipo,
-        estado:      form.estado,
-        prioridad:   form.prioridad,
-        asignado_a:  form.asignado_a  || null,
-        creado_por:  perfil.id,
-      }
-      const { data, error: err } = await supabase.from('pd_tickets').insert(payload).select().single()
-      if (err) { setError(err.message); setGuardando(false); return }
-      const { error: errAdj } = await insertarAdjuntos('ticket', data.id, adjuntos, perfil.id)
-      if (errAdj) { setError(`Ticket creado pero falló al guardar adjuntos: ${errAdj.message}`); setGuardando(false); return }
-      navigate(`/tickets/${data.id}`, { replace: true })
-    } else {
-      const payload = {
-        titulo:      form.titulo,
-        descripcion: form.descripcion,
-        cliente_id:  form.cliente_id || null,
-        sistema_id:  form.sistema_id || null,
-        impacto:     form.impacto,
-        frecuencia:  Number(form.frecuencia) || 1,
-        creado_por:  perfil.id,
-      }
-      const { data, error: err } = await supabase.from('pd_solicitudes').insert(payload).select().single()
-      if (err) { setError(err.message); setGuardando(false); return }
-      const { error: errAdj } = await insertarAdjuntos('solicitud', data.id, adjuntos, perfil.id)
-      if (errAdj) { setError(`Solicitud creada pero falló al guardar adjuntos: ${errAdj.message}`); setGuardando(false); return }
-      navigate(`/solicitudes/${data.id}`, { replace: true })
+    const payload = {
+      titulo:      form.titulo,
+      descripcion: form.descripcion,
+      cliente_id:  form.cliente_id  || null,
+      contacto_id: form.contacto_id || null,
+      tipo:        form.tipo,
+      estado:      form.estado,
+      prioridad:   form.prioridad,
+      asignado_a:  form.asignado_a  || null,
+      sistema_id:  form.sistema_id  || null,
+      frecuencia:  Number(form.frecuencia) || 1,
+      creado_por:  perfil.id,
     }
+    const { data, error: err } = await supabase.from('pd_tickets').insert(payload).select().single()
+    if (err) { setError(err.message); setGuardando(false); return }
+    const { error: errAdj } = await insertarAdjuntos('ticket', data.id, adjuntos, perfil.id)
+    if (errAdj) { setError(`Ticket creado pero falló al guardar adjuntos: ${errAdj.message}`); setGuardando(false); return }
+    navigate(`/tickets/${data.id}`, { replace: true })
   }
 
   function agregarAdjunto() {
@@ -101,50 +84,23 @@ export default function NuevoTicket() {
     setAdjuntos(a => a.filter((_, idx) => idx !== i))
   }
 
-  const esTicket = tipoForm === 'ticket'
-
   return (
     <div className="min-h-screen">
       <div className="bg-white dark:bg-gray-800 px-4 pt-14 pb-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft size={20} /></button>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">{esTicket ? 'Nuevo ticket' : 'Nueva solicitud'}</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Nuevo ticket</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="p-4 space-y-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-2 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setTipoForm('ticket')}
-            className={`flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-colors ${
-              esTicket
-                ? 'bg-red-600 text-white'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-            }`}
-          >
-            <Ticket size={16} />Ticket
-          </button>
-          <button
-            type="button"
-            onClick={() => setTipoForm('solicitud')}
-            className={`flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-colors ${
-              !esTicket
-                ? 'bg-amber-500 text-white'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-            }`}
-          >
-            <Lightbulb size={16} />Solicitud
-          </button>
-        </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4 space-y-3">
           <Campo label="Cliente">
             <select value={form.cliente_id} onChange={e => setForm(f => ({ ...f, cliente_id: e.target.value, contacto_id: '' }))} className={inputCls}>
-              <option value="">{esTicket ? '— Sin cliente —' : '— Varios / sin cliente específico —'}</option>
+              <option value="">— Sin cliente —</option>
               {clientes.map(c => <option key={c.id} value={c.id}>{c.razon_social}</option>)}
             </select>
           </Campo>
 
-          {esTicket && form.cliente_id && (
+          {form.cliente_id && (
             <Campo label="Contacto">
               <select value={form.contacto_id} onChange={e => setForm(f => ({ ...f, contacto_id: e.target.value }))} className={inputCls}>
                 <option value="">— Ninguno —</option>
@@ -155,68 +111,56 @@ export default function NuevoTicket() {
 
           <Campo label="Título *">
             <input required value={form.titulo} onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} className={inputCls}
-                   placeholder={esTicket ? 'Ej: No imprime el ticket tras actualización' : 'Ej: Reporte de ventas por vendedor'} />
+                   placeholder="Ej: No imprime el ticket tras actualización" />
           </Campo>
 
           <Campo label="Descripción">
             <textarea rows={3} value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} className={inputCls}
-                      placeholder={esTicket ? 'Detalle del problema...' : 'Qué pide, para qué lo quiere...'} />
+                      placeholder="Detalle del problema o pedido..." />
           </Campo>
 
-          {esTicket ? (
-            <>
-              <div className="grid grid-cols-3 gap-3">
-                <Campo label="Tipo">
-                  <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} className={inputCls}>
-                    <option value="consulta">Consulta</option>
-                    <option value="incidente">Incidente</option>
-                    <option value="soporte_tecnico">Soporte téc.</option>
-                  </select>
-                </Campo>
-                <Campo label="Prioridad">
-                  <select value={form.prioridad} onChange={e => setForm(f => ({ ...f, prioridad: e.target.value }))} className={inputCls}>
-                    <option value="baja">Baja</option>
-                    <option value="media">Media</option>
-                    <option value="alta">Alta</option>
-                  </select>
-                </Campo>
-                <Campo label="Estado">
-                  <select value={form.estado} onChange={e => setForm(f => ({ ...f, estado: e.target.value }))} className={inputCls}>
-                    <option value="abierto">Abierto</option>
-                    <option value="en_proceso">En proceso</option>
-                    <option value="esperando_cliente">Esperando cliente</option>
-                  </select>
-                </Campo>
-              </div>
-              <Campo label="Asignar a">
-                <select value={form.asignado_a} onChange={e => setForm(f => ({ ...f, asignado_a: e.target.value }))} className={inputCls}>
-                  <option value="">— Sin asignar —</option>
-                  {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.rol})</option>)}
-                </select>
-              </Campo>
-            </>
-          ) : (
-            <>
-              <Campo label="Sistema que cambiaría">
-                <select value={form.sistema_id} onChange={e => setForm(f => ({ ...f, sistema_id: e.target.value }))} className={inputCls}>
-                  <option value="">— Sin definir —</option>
-                  {sistemas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-                </select>
-              </Campo>
-              <div className="grid grid-cols-2 gap-3">
-                <Campo label="Impacto estimado">
-                  <select value={form.impacto} onChange={e => setForm(f => ({ ...f, impacto: e.target.value }))} className={inputCls}>
-                    <option value="bajo">Bajo</option>
-                    <option value="medio">Medio</option>
-                    <option value="alto">Alto</option>
-                  </select>
-                </Campo>
-                <Campo label="Frecuencia (cuántos pidieron)">
-                  <input type="number" min={1} value={form.frecuencia} onChange={e => setForm(f => ({ ...f, frecuencia: e.target.value }))} className={inputCls} />
-                </Campo>
-              </div>
-            </>
-          )}
+          <div className="grid grid-cols-3 gap-3">
+            <Campo label="Tipo">
+              <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} className={inputCls}>
+                <option value="soporte_tecnico">Soporte</option>
+                <option value="incidente">Incidente</option>
+                <option value="consulta">Consulta</option>
+              </select>
+            </Campo>
+            <Campo label="Prioridad">
+              <select value={form.prioridad} onChange={e => setForm(f => ({ ...f, prioridad: e.target.value }))} className={inputCls}>
+                <option value="baja">Baja</option>
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+              </select>
+            </Campo>
+            <Campo label="Estado">
+              <select value={form.estado} onChange={e => setForm(f => ({ ...f, estado: e.target.value }))} className={inputCls}>
+                <option value="abierto">Abierto</option>
+                <option value="en_proceso">En proceso</option>
+                <option value="esperando_cliente">Esperando cliente</option>
+              </select>
+            </Campo>
+          </div>
+
+          <Campo label="Asignar a">
+            <select value={form.asignado_a} onChange={e => setForm(f => ({ ...f, asignado_a: e.target.value }))} className={inputCls}>
+              <option value="">— Sin asignar —</option>
+              {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.rol})</option>)}
+            </select>
+          </Campo>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Campo label="Sistema (opcional)">
+              <select value={form.sistema_id} onChange={e => setForm(f => ({ ...f, sistema_id: e.target.value }))} className={inputCls}>
+                <option value="">— Ninguno —</option>
+                {sistemas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+              </select>
+            </Campo>
+            <Campo label="Frecuencia (cuántos pidieron)">
+              <input type="number" min={1} value={form.frecuencia} onChange={e => setForm(f => ({ ...f, frecuencia: e.target.value }))} className={inputCls} />
+            </Campo>
+          </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4">
@@ -279,7 +223,7 @@ export default function NuevoTicket() {
         {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-md">{error}</p>}
 
         <button type="submit" disabled={guardando} className="w-full py-3 rounded-md bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
-          <Save size={16} />{guardando ? 'Creando...' : `Crear ${esTicket ? 'ticket' : 'solicitud'}`}
+          <Save size={16} />{guardando ? 'Creando...' : 'Crear ticket'}
         </button>
       </form>
     </div>

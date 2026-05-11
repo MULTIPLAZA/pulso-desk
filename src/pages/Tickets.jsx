@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase'
 import { useAuth, puedeCrearTickets } from '../lib/auth'
 import { Search, PlusCircle, Ticket as TicketIcon, Ticket } from 'lucide-react'
 import { format } from 'date-fns'
-import TabsTickets from '../components/TabsTickets'
 
 const ESTADO_FILTROS = [
   { value: 'abiertos',          label: 'Abiertos'           },
@@ -14,6 +13,19 @@ const ESTADO_FILTROS = [
   { value: 'cerrado',           label: '⚪ Cerrado'         },
   { value: 'todos',             label: 'Todos'              },
 ]
+
+const TIPO_FILTROS = [
+  { value: 'todos',          label: 'Todos los tipos' },
+  { value: 'soporte_tecnico', label: 'Soporte'        },
+  { value: 'incidente',      label: 'Incidente'       },
+  { value: 'consulta',       label: 'Consulta'        },
+]
+
+const TIPO_LABEL = {
+  soporte_tecnico: 'Soporte',
+  incidente:       'Incidente',
+  consulta:        'Consulta',
+}
 
 const ESTADO_CFG = {
   abierto:           { bg: 'bg-red-100',    text: 'text-red-700',    label: 'Abierto' },
@@ -31,10 +43,11 @@ const PRIO_CFG = {
 export default function Tickets() {
   const navigate = useNavigate()
   const { perfil } = useAuth()
-  const [tickets, setTickets]   = useState([])
-  const [filtro, setFiltro]     = useState('abiertos')
-  const [busqueda, setBusqueda] = useState('')
-  const [loading, setLoading]   = useState(true)
+  const [tickets, setTickets]       = useState([])
+  const [filtro, setFiltro]         = useState('abiertos')
+  const [filtroTipo, setFiltroTipo] = useState('todos')
+  const [busqueda, setBusqueda]     = useState('')
+  const [loading, setLoading]       = useState(true)
 
   useEffect(() => { cargar() }, [])
 
@@ -54,6 +67,7 @@ export default function Tickets() {
       if (filtro === 'abiertos') return t.estado !== 'cerrado'
       return t.estado === filtro
     })
+    .filter(t => filtroTipo === 'todos' ? true : t.tipo === filtroTipo)
     .filter(t => {
       if (!busqueda) return true
       if (t.titulo.toLowerCase().includes(q)) return true
@@ -81,8 +95,6 @@ export default function Tickets() {
         </div>
       </div>
 
-      <TabsTickets />
-
       <div className="bg-white dark:bg-gray-800 px-4 pt-3 pb-3 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10">
         <div className="relative mb-3">
           <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -103,6 +115,21 @@ export default function Tickets() {
                 filtro === f.value
                   ? 'bg-emerald-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 mt-2 scrollbar-hide">
+          {TIPO_FILTROS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => setFiltroTipo(f.value)}
+              className={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 border ${
+                filtroTipo === f.value
+                  ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
               }`}
             >
               {f.label}
@@ -132,6 +159,11 @@ export default function Tickets() {
                 <span className="text-xs text-gray-400">#{t.numero}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${e.bg} ${e.text}`}>{e.label}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${p.bg} ${p.text}`}>{p.emoji} {t.prioridad}</span>
+                {t.tipo && (
+                  <span className="text-xs px-2 py-0.5 rounded-md font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    {TIPO_LABEL[t.tipo] ?? t.tipo}
+                  </span>
+                )}
                 <span className="text-xs text-gray-500 ml-auto">{format(new Date(t.created_at), 'dd/MM/yy')}</span>
               </div>
               <p className="font-semibold text-gray-900 dark:text-white text-sm">{t.titulo}</p>
