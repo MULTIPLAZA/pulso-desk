@@ -89,17 +89,24 @@ Deno.serve(async (req) => {
   // 2. Datos del resumen
   const desde7d = new Date(Date.now() - 7 * 86400000).toISOString()
 
-  const [tk, viejos] = await Promise.all([
+  const [tk, viejos, pedidos] = await Promise.all([
     supabase.from('pd_tickets').select('id, tipo, estado, cerrado_at'),
     supabase.from('pd_tickets')
-      .select('numero, titulo, prioridad, created_at, pd_clientes(razon_social)')
+      .select('numero, titulo, tipo, prioridad, created_at, pd_clientes(razon_social)')
       .neq('estado', 'cerrado')
       .order('created_at', { ascending: true })
       .limit(5),
+    supabase.from('pd_tickets')
+      .select('numero, titulo, tipo, frecuencia, pd_clientes(razon_social)')
+      .neq('estado', 'cerrado')
+      .gt('frecuencia', 1)
+      .order('frecuencia', { ascending: false })
+      .limit(5),
   ])
 
-  const tickets   = tk.data     ?? []
-  const masViejos = viejos.data ?? []
+  const tickets    = tk.data     ?? []
+  const masViejos  = viejos.data  ?? []
+  const masPedidos = pedidos.data ?? []
 
   const stats = {
     abiertos:       tickets.filter(t => t.estado === 'abierto').length,
@@ -120,10 +127,24 @@ Deno.serve(async (req) => {
     month:   'long',
   })
 
+  const TIPO_ETIQUETA: Record<string, string> = {
+    soporte_tecnico: '🛠 Soporte',
+    incidente:       '⚠️ Incidente',
+    consulta:        '💡 Consulta',
+    peticion:        '🙋 Petición',
+  }
+
   const filasViejos = masViejos.map(t => {
     const dias = Math.floor((Date.now() - new Date(t.created_at).getTime()) / 86400000)
+    const cli  = (t.pd_clientes as any)?.razon_social
+    const tip  = TIPO_ETIQUETA[t.tipo as string] ?? ''
+    return `<li>#${t.numero} · ${tip} · <b>${t.prioridad}</b> · ${dias}d · ${escape(t.titulo)}${cli ? ` <span style="color:#888">(${escape(cli)})</span>` : ''}</li>`
+  }).join('')
+
+  const filasPedidos = masPedidos.map(t => {
     const cli = (t.pd_clientes as any)?.razon_social
-    return `<li>#${t.numero} · <b>${t.prioridad}</b> · ${dias}d · ${escape(t.titulo)}${cli ? ` <span style="color:#888">(${escape(cli)})</span>` : ''}</li>`
+    const tip = TIPO_ETIQUETA[t.tipo as string] ?? ''
+    return `<li><b>× ${t.frecuencia}</b> · #${t.numero} · ${tip} · ${escape(t.titulo)}${cli ? ` <span style="color:#888">(${escape(cli)})</span>` : ''}</li>`
   }).join('')
 
   const html = `<!doctype html>
@@ -147,6 +168,11 @@ Deno.serve(async (req) => {
       <tr style="background:#fef3c7"><td>💡 Consulta</td><td align="right"><b>${stats.consulta}</b></td></tr>
       <tr><td>🙋 Petición</td><td align="right"><b>${stats.peticion}</b></td></tr>
     </table>
+
+    ${masPedidos.length > 0 ? `
+      <h3 style="color:#7c3aed;font-size:15px;margin-top:20px;margin-bottom:8px">🔥 Más pedidos (por frecuencia)</h3>
+      <ul style="font-size:14px;padding-left:20px;color:#374151">${filasPedidos}</ul>
+    ` : ''}
 
     ${masViejos.length > 0 ? `
       <h3 style="color:#7c3aed;font-size:15px;margin-top:20px;margin-bottom:8px">⏰ Tickets más viejos sin cerrar</h3>
